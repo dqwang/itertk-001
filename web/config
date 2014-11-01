@@ -1,0 +1,9 @@
+
+
+CROSS = arm-linux-
+CC = $(CROSS)gcc
+
+LIBDIR = ../../lib/
+LIBS = $(LIBDIR)libcgic.a $(LIBDIR)libits.a
+
+INC = ../../inc
