@@ -36,6 +36,7 @@
 //////////////////////////////////////////////////////////////////////////
 int main ( int argc, char* argv[] )
 {
+static int cnt =0;
     sys_version_show ( stdout );
     config_init();
     web_init();
@@ -43,6 +44,7 @@ int main ( int argc, char* argv[] )
     com_init();
     while(1)
     {
+    sys_log(FUNC, LOG_DBG,"%d\n",cnt++);
         web_process();
     }
     return 0;

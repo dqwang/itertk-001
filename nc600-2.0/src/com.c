@@ -20,6 +20,7 @@
 #include "config.h"
 #include "mode.h"
 #include "thread.h"
+#include "log.h"
 
 
 static int gcomfd[MAX_COM_PORT] = {0,};
@@ -334,9 +335,11 @@ static void com_proc(void* arg)
 	fd_set m_readfds;
 	int i;
 	char lsbuf[1024];
+	//static int cnt =0;
 
 	while(1){
 		int len;
+		//sys_log(FUNC, LOG_DBG,"%d\n",cnt++);
 		if (rs_type  == RS232){
 			len = read(gcomfd[con_com->id - 1], lsbuf, 1024);
 			if(len > 0)	{

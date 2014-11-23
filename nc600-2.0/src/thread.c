@@ -20,7 +20,7 @@
 
 #include "thread.h"
 #include <stdio.h>
-
+#include "log.h"
 
 //////////////////////////////////////////////////////////////////////////
 ///
@@ -37,6 +37,7 @@ int trd_create(TRD_t *trd_id, void *(*func)(void *), void *arg)
     int ret = -1;
 
     ret = pthread_create(trd_id, NULL, func, arg);
+	
 
     if (ret != 0)
     {

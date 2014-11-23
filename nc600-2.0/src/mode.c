@@ -240,6 +240,7 @@ static void mode_proc(void* arg)
     struct sockaddr_in addr;
     struct sockaddr_in client_addr;
     socklen_t addr_len;
+static int cnt =0;
 
 AGAIN:
     if(con_mode->mode == WORK_NO || md->session->protocol == TCP_NO)
@@ -289,7 +290,8 @@ AGAIN:
     memcpy(&tmp, md->session, sizeof(CONFIG_SESSION));
     while(1)
     {
-        if(con_mode->mode == WORK_NO || memcmp(md->session, &tmp, sizeof(CONFIG_SESSION)) != 0)
+	sys_log(FUNC, LOG_DBG,"%d\n",cnt++);
+	if(con_mode->mode == WORK_NO || memcmp(md->session, &tmp, sizeof(CONFIG_SESSION)) != 0)
         {
             close(md->fd);
             md->fd = 0;

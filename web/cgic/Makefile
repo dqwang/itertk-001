@@ -20,10 +20,10 @@ libcgic.a: cgic.o cgic.h
 #mingw32 and cygwin users: replace .cgi with .exe
 
 cgictest.cgi: cgictest.o libcgic.a
-	$(CC) cgictest.o -o cgictest.cgi ${LIBS}
+	$(CC) cgictest.o -o cgictest.cgi ${LIBS} --static
 
 capture: capture.o libcgic.a
-	$(CC) capture.o -o capture ${LIBS}
+	$(CC) capture.o -o capture ${LIBS} --static
 
 clean:
 	rm -f *.o *.a cgictest.cgi capture

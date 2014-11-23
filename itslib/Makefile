@@ -3,7 +3,7 @@ CROSS = arm-linux-
 GCC = $(CROSS)gcc
 LD = $(CROSS)ld
 LDFLAGS	= -r -o
-EXEC = libits-arm.a
+EXEC = libits.a
 INC	=./inc/
 SRC = ./src/
 OBJS	=						\
@@ -14,10 +14,12 @@ OBJS	=						\
 		#$(SRC)main.o			\
 
 .c.o:
-	$(GCC) -I$(INC) -c -o $*.o $<
+	$(GCC) -I$(INC) -c -o $*.o $< --static
 
 default:	$(OBJS)
 	$(LD) $(LDFLAGS) $(EXEC) $(OBJS) 
+copy:
+	cp libits.a ../web/lib/
 clean:
 	rm -rf $(EXEC) 
 	rm -rf $(SRC)*.o

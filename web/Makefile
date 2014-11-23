@@ -30,4 +30,4 @@ clean:
 
 copy:
 	cp cgi-bin/*.cgi /home/jack/n32926/bsp/tftp/start/nand1-2/app/web/cgi-bin
-	echo "copy cgi to tftp"
+	cp cgi-bin/*.cgi /home/jack/n32926/bsp/tftp
