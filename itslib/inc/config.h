@@ -123,6 +123,10 @@ typedef struct tagCONFIG_LIMIT
     BYTE modify[MAX_USR_NUM];
 }CONFIG_LIMIT;
 
+typedef struct tagCONFIG_GPIO
+{
+    int alarm[2];
+}CONFIG_GPIO;
 
 
 

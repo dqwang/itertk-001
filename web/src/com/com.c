@@ -10,7 +10,6 @@
 char name[32]="";
 CONFIG_COM con_com;
 
-
 int session_read(char* name)
 {
 	char lsbuf[32]="";
@@ -378,8 +377,8 @@ int cgiMain()
 	fprintf(cgiOut, "            <td><table width=\"100%%\" height=\"55\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 	fprintf(cgiOut, "              <tr>\n");
 	fprintf(cgiOut, "                <td width=\"10%%\" height=\"55\" valign=\"middle\"><img src=\"../images/title.gif\" width=\"54\" height=\"55\"></td>\n");
-	fprintf(cgiOut, "                <td width=\"90%%\" valign=\"top\"><span class=\"left_txt2\">在这里，您可以根据您的网站要求，修改设置网站的</span><span class=\"left_txt3\">基本参数</span><span class=\"left_txt2\">！</span><br>\n");
-	fprintf(cgiOut, "                          <span class=\"left_txt2\">包括</span><span class=\"left_txt3\">网站名称，网址，网站备案号，联系方式，网站公告，关键词，风格</span><span class=\"left_txt2\">等以及网站</span><span class=\"left_txt3\">会员及等级积分设置</span><span class=\"left_txt2\">。 </span></td>\n");
+	fprintf(cgiOut, "                <td width=\"90%%\" valign=\"top\"><span class=\"left_txt2\">在这里，您可以根据您的要求，修改设置串口的</span><span class=\"left_txt3\">基本参数</span><span class=\"left_txt2\">！</span><br>\n");
+	fprintf(cgiOut, "                          <span class=\"left_txt2\">包括</span><span class=\"left_txt3\">波特率，数据位，校验方式，停止位，数据流控</span><span class=\"left_txt2\">等</span><span class=\"left_txt3\">参数设置</span><span class=\"left_txt2\">。 </span></td>\n");
 	fprintf(cgiOut, "              </tr>\n");
 	fprintf(cgiOut, "            </table></td>\n");
 	fprintf(cgiOut, "          </tr>\n");

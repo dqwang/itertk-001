@@ -125,6 +125,10 @@ typedef struct tagCONFIG_LIMIT
 }CONFIG_LIMIT;
 
 
+typedef struct tagCONFIG_GPIO
+{
+    int alarm[2];
+}CONFIG_GPIO;
 
 typedef struct tagCONFIG_DATA
 {

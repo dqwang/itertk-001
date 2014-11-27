@@ -1,73 +1,20 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright (c) 2010, 浙江共创技术有限公司
-///    All rights reserved.
-///
-/// @file   system.h
-/// @brief  系统函数声明
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010－04－24
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////#include <stdio.h>
-
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
 #include <stdio.h>
 #include "def.h"
 
 
-#define PRODUCT_NAME    "NC616"
-#define PROGRAM_VERSION "V2.0"
-//////////////////////////////////////////////////////////////////////////
-///
-///     打印版本信息
-///     @param *stream fprintf的第一个参数
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+#define PRODUCT_NAME    "Itertk UART-NETWORK Gateway"
+#define PROGRAM_VERSION "V1.0"
+
 extern  void sys_version_show ( FILE * stream );
-//////////////////////////////////////////////////////////////////////////
-///
-///     ip地址字符转转换成DWORD
-///     @param *str 字符串
-///     @return ip
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
 extern  DWORD sys_str2ip(char *str);
-//////////////////////////////////////////////////////////////////////////
-///
-///     ip地址字符转转换成DWORD
-///     @param ip ip地址
-///     @return *str ip字符串
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 extern  char* sys_ip2str_static ( DWORD ip );
-//////////////////////////////////////////////////////////////////////////
-///
-///     Get the count of millisecond
-///     @return mscnt -- count of microsecond
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 extern UQWORD system_mscount_get(void);
-//////////////////////////////////////////////////////////////////////////
-///
-///     封装write
-///     @param fd-文件描述符
-///     @param *ptr-数据首地址
-///     @param nbytes-数据长度
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-05-05
-//////////////////////////////////////////////////////////////////////////
 extern int  writen( int fd, void *ptr, int nbytes);
 extern int  writen_rs485( int fd, void *ptr, int nbytes);
-#endif
+
+#endif/*__SYSTEM_H__*/
 

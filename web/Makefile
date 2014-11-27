@@ -13,7 +13,7 @@ all:
 #	cd src/reset;make
 	cd src/upgrade;make
 	cd src/vlan;make
-
+	cd src/gpio;make
 clean:
 	cd src/com;make clean
 	cd src/host;make clean

@@ -213,5 +213,8 @@ CMD_CODE its_conf_mode_set(char* name, CONFIG_MODE* con_mode);
 //////////////////////////////////////////////////////////////////////////
 CMD_CODE its_conf_lim_set(char* name, CONFIG_LIMIT* con_lim);
 
+
+CMD_CODE its_conf_gpio_query(char* name, CONFIG_GPIO* con_gpio);
+
 #endif
 

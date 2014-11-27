@@ -134,7 +134,7 @@ int  writen( int fd, void *ptr, int nbytes)
     int  nleft, nwriten ;
 
     nleft = nbytes ;
-#if 1
+#if 0
 {
 	int i=0;
 	printf("%s:\n",__FUNCTION__);
@@ -176,7 +176,7 @@ int  writen_rs485( int fd, void *ptr, int nbytes)
 	int  nleft, nwriten ;
 
 	nleft = nbytes ;
-#if 1
+#if 0
 {
 	int i=0;
 	printf("%s:\n",__FUNCTION__);

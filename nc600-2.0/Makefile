@@ -16,7 +16,7 @@ OBJS	=						\
 		$(OBJ)itsip.o			\
 		$(OBJ)com.o				\
 		$(OBJ)mode.o			\
-
+		$(OBJ)gpio.o
 $(OBJ)%.o: $(SRC)%.c $(INC)*.h
 	$(GCC) -Wall  -I$(INC) -g -c -o $(OBJ)$*.o $<
 

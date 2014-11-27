@@ -1,21 +1,3 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright (c) 2010, 浙江共创技术有限公司
-///    All rights reserved.
-///
-/// @file   log.h
-/// @brief  日志相关声明
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010－04－24
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////
-
 #ifndef __LOG_H__
 #define __LOG_H__
 
@@ -32,18 +14,45 @@ typedef enum tagLOG_Lv
     LOG_FATAL,
 }LOG_Lv;
 
-
-
-//////////////////////////////////////////////////////////////////////////
-///
-///     打印日志
-///     @param  module  函数名称
-///     @param  level   日志等级
-///     @param  format  数据内容
-///     @return SUCCESS FAILURE
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
 extern  int sys_log(char* module, LOG_Lv level, char* format, ...);
 
-#endif
+#define LOG_ON
+
+
+#ifdef LOG_ON
+#define log_debug(f, x)		sys_log(FUNC, LOG_DBG, f, x)
+#define log_trace(f, x)		sys_log(FUNC, LOG_TRACE, f, x)
+#define log_msg(f, x)		sys_log(FUNC, LOG_MSG, f, x)
+#define log_warn(f, x)		sys_log(FUNC, LOG_WARN, f, x)
+#define log_err(f, x)			sys_log(FUNC, LOG_ERR, f, x)
+#define log_fatal(f, x)		sys_log(FUNC, LOG_FATAL, f, x)
+
+
+#define log_d()		sys_log(FUNC, LOG_DBG, "")
+#define log_t()		sys_log(FUNC, LOG_TRACE, "")
+#define log_m()		sys_log(FUNC, LOG_MSG, "")
+#define log_w()		sys_log(FUNC, LOG_WARN,"")
+#define log_e()			sys_log(FUNC, LOG_ERR,"")
+#define log_f()		sys_log(FUNC, LOG_FATAL, "")
+
+
+#else
+#define log_debug(f, ...)		
+#define log_trace(f, ...)		
+#define log_msg(f, ...)		
+#define log_warn(f, ...)		
+#define log_err(f, ...)			
+#define log_fatal(f, ...)
+
+
+#define log_d()		
+#define log_t()		
+#define log_m()	
+#define log_w()	
+#define log_e()		
+#define log_f()	
+
+
+#endif/*LOG_ON*/
+
+#endif/*__LOG_H__*/

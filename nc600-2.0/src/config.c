@@ -1,21 +1,3 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright (c) 2010, 浙江共创技术有限公司
-///    All rights reserved.
-///
-/// @file   config.c
-/// @brief  参数配置
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010－04－24
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////
-
 #include <string.h>
 #include <stdlib.h>
 #include "config.h"
@@ -25,17 +7,10 @@
 #include "log.h"
 #include "cmd_def.h"
 
-///全局配置参数定义
 CONFI_DATA g_conf_info;
 void get_mac(void);
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     配置默认参数
-///     @param *pConf 参数指针
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 void config_makedefault ( CONFI_DATA *pConf )
 {
 
@@ -122,17 +97,11 @@ void config_makedefault ( CONFI_DATA *pConf )
     strcpy((char*)pConf->con_usr[0].usr_passwd, crypt("123456", USR_SALT));
     pConf->con_usr[0].usr_auth = USR_ROOT;
 
-     //printf(" XXX : passwd: %s, \n",(char *) pConf->con_usr[0].usr_passwd);
+    
  
     config_save ( pConf );
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     读取文件参数
-///     @param *pConf 参数指针
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 void config_load ( CONFI_DATA *pConf )
 {
     FILE *fp = sys_file_open ( CONFIG_FILE, MODE_READ_T );
@@ -149,13 +118,7 @@ void config_load ( CONFI_DATA *pConf )
     sys_file_close ( fp );
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     系统参数设置
-///     @param *pConf 参数指针
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 void config_net_set(CONFIG_NET *pConf)
 {
 	char cmd[64] = "";
@@ -176,7 +139,7 @@ void config_net_set(CONFIG_NET *pConf)
 	system(cmd);
 	
 
-	/*DEBUG BY WANG 20140506s*/
+	/*
 
 	printf(" dev_ip = %s \n", sys_ip2str_static(pConf->dev_ip));
 	printf(" dev_gw = %s \n", sys_ip2str_static(pConf->dev_gw));
@@ -189,19 +152,14 @@ void config_net_set(CONFIG_NET *pConf)
 	printf(" mac =  %02x:%02x:%02x:%02x:%02x:%02x\n", pConf->dev_mac[0],pConf->dev_mac[1],pConf->dev_mac[2],pConf->dev_mac[3],\
 				pConf->dev_mac[4],pConf->dev_mac[5]);
 	
-	
+	*/
 		
 
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     配置参数初始化
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 void config_init ( void )
 {
-	if ( file_is_existed ( CONFIG_FILE ) == 0 )	{//文件不存在
+	if ( file_is_existed ( CONFIG_FILE ) == 0 )	{
 		sys_log(FUNC, LOG_WARN, "配置文件不存在，生成默认配置！");
 		config_makedefault ( &g_conf_info );
 	} else {
@@ -210,13 +168,7 @@ void config_init ( void )
 	config_net_set(&g_conf_info.con_net);
 	get_mac();
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     配置参数保存
-///     @param *pConf 参数指针
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
+
 void config_save ( CONFI_DATA *pConf )
 {
     FILE *fp = sys_file_open ( CONFIG_FILE, MODE_WRITE_T );
@@ -232,14 +184,7 @@ void config_save ( CONFI_DATA *pConf )
     }
     sys_file_close ( fp );
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     通过name查找配置用户结构信息
-///     @param *name user的name
-///     @return USR_INFO* 用户信息结构
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
+
 USR_INFO* get_usr_info(BYTE *name)
 {
     int i;
@@ -251,15 +196,6 @@ USR_INFO* get_usr_info(BYTE *name)
     return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     添加配置用户结构信息
-///     @param *name user的name
-///     @param *psw user的passwd
-///     @return int 返回码
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
 int sys_usr_add(BYTE* name, BYTE* psw)
 {
     int i;
@@ -276,14 +212,6 @@ int sys_usr_add(BYTE* name, BYTE* psw)
     return USR_ADD_FAILED;
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     删除配置用户结构信息
-///     @param *name user的name
-///     @return int 返回码
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
 int sys_usr_del(BYTE* name)
 {
     int i;
@@ -299,15 +227,6 @@ int sys_usr_del(BYTE* name)
     return USR_DEL_FAILED;
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     更改配置用户的名称
-///     @param *oname
-///     @param *nname
-///     @return int FAILURE  SUCCESS
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-28
-//////////////////////////////////////////////////////////////////////////
 int set_usr_name(BYTE *oname, BYTE *nname)
 {
     int i;
@@ -323,15 +242,6 @@ int set_usr_name(BYTE *oname, BYTE *nname)
     }
     return USR_MODIFY_FAILED;
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     更改配置用户的密码
-///     @param *oname
-///     @param *psw
-///     @return int FAILURE  SUCCESS
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-28
-//////////////////////////////////////////////////////////////////////////
 int set_usr_psw(BYTE *name, BYTE *psw)
 {
     int i;
@@ -364,52 +274,30 @@ void get_mac(void)
 {
 	int sockfd;
 	struct ifreq struReq;
+	
 	sockfd = socket(PF_INET,SOCK_STREAM,0);
 	memset(&struReq,0,sizeof(struReq));
 
 	strncpy(struReq.ifr_name, "eth0", sizeof(struReq.ifr_name));
 
 	ioctl(sockfd,SIOCGIFHWADDR,&struReq);
-	//fprintf(stderr, "%d-%s\n", __LINE__, strerror(errno));
 	
-	#if 1//TODO WANG 20140507
-	int j;
-	printf("HWADDR :	");
-	for (j=0;j<6;j++)
-		printf("%02x ", struReq.ifr_hwaddr.sa_data[j]);
-	memcpy(g_conf_info.con_net.dev_mac, struReq.ifr_hwaddr.sa_data, sizeof(g_conf_info.con_net.dev_mac));
-
-	
-	printf("g_conf_info mac :	");
-	for (j=0;j<6;j++)
-		printf("%02x ", g_conf_info.con_net.dev_mac[j]);
-	printf("\n");
-	#else
-	char lsbuf[32] = "";
-	strcpy(lsbuf, (char*)ether_ntoa((struct ether_addr *)struReq.ifr_hwaddr.sa_data));
-	
-	printf("mac is [%s]\n", lsbuf);
-	char * delim = ":";
-	char *p = strtok(lsbuf, delim);
-
-	//printf("XXX: %s\n", p);
-	g_conf_info.con_net.dev_mac[0] = atoi(p);
-
-	int i = 1;
-	while((p = strtok(NULL, delim)))
 	{
-		//printf("XXX: %s, atoi: %02x\n", p,atoi(p));
-		g_conf_info.con_net.dev_mac[i++] = atoi(p);
-		if(i >= 6)
-			break;
+		int j;
+		printf("HWADDR :	");
+		for (j=0;j<6;j++)
+			printf("%02x ", struReq.ifr_hwaddr.sa_data[j]);
+		printf("\n");
+		
+		memcpy(g_conf_info.con_net.dev_mac, struReq.ifr_hwaddr.sa_data, sizeof(g_conf_info.con_net.dev_mac));
+
+		
+		printf("g_conf_info mac :	");
+		for (j=0;j<6;j++)
+			printf("%02x ", g_conf_info.con_net.dev_mac[j]);
+		printf("\n");
 	}
-
-	printf("[%d][%d][%d][%d][%d][%d]\n",g_conf_info.con_net.dev_mac[0],
-		g_conf_info.con_net.dev_mac[1],	g_conf_info.con_net.dev_mac[2],
-		g_conf_info.con_net.dev_mac[3],	g_conf_info.con_net.dev_mac[4],
-									g_conf_info.con_net.dev_mac[5]);
-
-	#endif
+	
 	close(sockfd);
 }
 

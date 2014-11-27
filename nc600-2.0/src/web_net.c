@@ -22,6 +22,7 @@
 #include "itsip.h"
 #include "config.h"
 #include "cmd_def.h"
+#include "gpio.h"
 
 NET_CONN_INFO g_client_conn[MAX_TCP_CONN];
 static int g_listen_conn = -1;	//! server listening socket
@@ -434,6 +435,21 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
             net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
         }
         break;
+  case CONF_GPIO:
+	{
+	  	CONFIG_GPIO mygpio;
+		gpio_status alarm1, alarm2;
+		get_gpio(ALARM_TTLIN1,&alarm1);
+		mygpio.alarm[0] = alarm1;
+		get_gpio(ALARM_TTLIN2,&alarm2);
+		mygpio.alarm[1] = alarm2;
+		itsip_pack(ITS_ACK_CONF_QUERY, sizeof(CONFIG_GPIO), 0, NULL, &its_ack_pak);
+		
+		its_ack_pak.head.itsip_data[0] = 0;
+	            net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&mygpio, sizeof(CONFIG_GPIO));
+	
+  	}
+	break;
     default:
         break;
     }

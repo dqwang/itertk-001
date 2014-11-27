@@ -99,6 +99,7 @@ enum
     CONF_COM,
     CONF_MODE,
     CONF_LIMIT,
+    CONF_GPIO,
 };
 
 

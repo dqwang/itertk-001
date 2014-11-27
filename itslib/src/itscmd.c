@@ -180,6 +180,8 @@ CMD_CODE its_netinfo_query(char* name, CONFIG_NET* con_net)
 	return QUERY_OK;
 }
 
+
+
 //////////////////////////////////////////////////////////////////////////
 ///
 ///     its_netinfo_set
@@ -503,6 +505,39 @@ CMD_CODE its_conf_com_query(char* name, CONFIG_COM* con_com)
     }
 	net_conn_close(&conn);
 	return QUERY_OK;
+}
+
+
+CMD_CODE its_conf_gpio_query(char* name, CONFIG_GPIO* con_gpio)
+{
+	ITSIP_PACKET query_pak;
+	NET_CONN_INFO conn;
+
+	itsip_pack(ITS_CONF_QUERY, 0, 0, NULL, &query_pak);
+	strcpy((char*)query_pak.head.itsip_user, name);
+	query_pak.head.itsip_data[0] = CONF_GPIO;
+	if(net_conn_connect(&conn) == FAILURE)
+        		return CONN_FAILED;
+
+	if(net_conn_send(&conn, &query_pak.head, NULL, 0) == FAILURE)
+    {
+        net_conn_close(&conn);
+        return SEND_FAILED;
+    }
+
+	if(net_conn_recv(&conn, &query_pak.head, sizeof(ITSIP)) == FAILURE)
+    {
+        net_conn_close(&conn);
+        return RECV_FAILED;
+    }
+	if(net_conn_recv(&conn, con_gpio, query_pak.head.itsip_extlen) == FAILURE)
+    {
+        net_conn_close(&conn);
+        return RECV_FAILED;
+    }
+	net_conn_close(&conn);
+	return QUERY_OK;
+
 }
 
 //////////////////////////////////////////////////////////////////////////

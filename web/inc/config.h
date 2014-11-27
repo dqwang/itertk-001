@@ -79,6 +79,12 @@ typedef struct tagCONFIG_COM
 
 } CONFIG_COM;
 
+
+typedef struct tagCONFIG_GPIO
+{
+    int alarm[2];
+}CONFIG_GPIO;
+
 typedef struct tagCONFIG_SESSION
 {
 

@@ -331,15 +331,11 @@ void com_para_set(int fd, CONFIG_COM *con_com)
 //////////////////////////////////////////////////////////////////////////
 static void com_proc(void* arg)
 {
-	CONFIG_COM *con_com = (CONFIG_COM*)arg;
-	fd_set m_readfds;
-	int i;
+	CONFIG_COM *con_com = (CONFIG_COM*)arg;	
 	char lsbuf[1024];
-	//static int cnt =0;
-
+	
 	while(1){
-		int len;
-		//sys_log(FUNC, LOG_DBG,"%d\n",cnt++);
+		int len;		
 		if (rs_type  == RS232){
 			len = read(gcomfd[con_com->id - 1], lsbuf, 1024);
 			if(len > 0)	{
@@ -363,26 +359,7 @@ static void com_proc(void* arg)
 		
 		
 	}
-	#if  0
-	while(1){
-		FD_ZERO(&m_readfds);
-		FOR(i, MAX_COM_PORT)	{
-			if(gcomfd[i] > 0)
-				FD_SET(gcomfd[i], &m_readfds);
-		}
-		int ret = select(gcomfd[MAX_COM_PORT - 1] + 1, &m_readfds, NULL, NULL, NULL);
 
-		if(ret <= 0)
-			continue;
-		FOR(i, MAX_COM_PORT)	{
-			if(FD_ISSET(gcomfd[i], &m_readfds)){
-				int len = read(gcomfd[i], lsbuf, 1024);
-				//printf("i = %d,len = %d\n", i, len);
-				SendComDataToNet(i, lsbuf, len);
-			}
-		}
-	}
-	#endif
 
 }
 
@@ -436,5 +413,9 @@ inline int SendNetDataToCom(int id, void *data, int len)
 		return writen(gcomfd[id], data, len);
 	else if (rs_type == RS485) 
 	 	return writen_rs485(gcomfd[id], data, len);	
+	
+	return -1;
+	
 }
+
 
