@@ -128,6 +128,15 @@ typedef struct tagCONFIG_GPIO
     int alarm[2];
 }CONFIG_GPIO;
 
+typedef struct tagCONFIG_SERVER
+{
+	DWORD server_ip;/*server ip  / dns name*/	
+	WORD server_port;
+
+}CONFIG_SERVER;
+
+#define SERVER_PORT	8888
+
 
 
 typedef struct tagUSR_INFO

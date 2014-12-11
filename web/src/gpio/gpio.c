@@ -8,8 +8,6 @@
 #include "itscmd.h"
 
 char name[32]="";
-CONFIG_COM con_com;
-
 CONFIG_GPIO con_gpio;
 
 

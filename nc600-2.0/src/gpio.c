@@ -98,12 +98,15 @@ void gpio_proc(void)
 
 int init_gpio(void)
 {
-	TRD_t gpio_trd;
+	//TRD_t gpio_trd;
 	
 	set_gpio(ALARM_TTLIN1, GD_IN, GS_HIGH);
 	set_gpio(ALARM_TTLIN2, GD_IN, GS_HIGH);
-	//set_gpio(ALARM_O, GD_OUT, GS_HIGH);	
+
+	set_gpio(PHY_RESET,  GD_OUT,  GS_HIGH);	
 
 	// trd_create(&gpio_trd, (void*)&gpio_proc, NULL);
+
+	return 0;
 }
 

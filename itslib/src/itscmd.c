@@ -62,7 +62,7 @@ CMD_CODE user_login(char *name, char* psw)
     }
     net_conn_close(&conn);
     int ret = user_login_ack.itsip_data[0];
-    return ret;;
+    return ret;
 }
 
 
@@ -78,35 +78,32 @@ CMD_CODE user_login(char *name, char* psw)
 //////////////////////////////////////////////////////////////////////////
 CMD_CODE its_sysinfo_query(char* name, CONFIG_SYS* con_sys)
 {
-    ITSIP_PACKET sysinfo_quer_pak;
+	ITSIP_PACKET sysinfo_quer_pak;
 	NET_CONN_INFO conn;
 
 	itsip_pack(ITS_SYSINFO_QUERY, 0, 0, NULL, &sysinfo_quer_pak);
 	strcpy((char*)sysinfo_quer_pak.head.itsip_user, name);
 	if(net_conn_connect(&conn) == FAILURE)
-        return CONN_FAILED;
+		return CONN_FAILED;
 
-    if(net_conn_send(&conn, &sysinfo_quer_pak.head, NULL, 0) == FAILURE)
-    {
-        net_conn_close(&conn);
-        return SEND_FAILED;
-    }
-	if(net_conn_recv(&conn, &sysinfo_quer_pak.head, sizeof(ITSIP)) == FAILURE)
-    {
-        net_conn_close(&conn);
-        return FAILURE;
-    }
+	if(net_conn_send(&conn, &sysinfo_quer_pak.head, NULL, 0) == FAILURE){
+		net_conn_close(&conn);
+		return SEND_FAILED;
+	}
+	if(net_conn_recv(&conn, &sysinfo_quer_pak.head, sizeof(ITSIP)) == FAILURE){
+		net_conn_close(&conn);
+		return FAILURE;
+	}
 
-	if(net_conn_recv(&conn, con_sys, sysinfo_quer_pak.head.itsip_extlen) == FAILURE)
-    {
-        net_conn_close(&conn);
-        return RECV_FAILED;
-    }
+	if(net_conn_recv(&conn, con_sys, sysinfo_quer_pak.head.itsip_extlen) == FAILURE){
+		net_conn_close(&conn);
+		return RECV_FAILED;
+	}
 
 
-    net_conn_close(&conn);
+	net_conn_close(&conn);
 
-    return QUERY_OK;
+	return QUERY_OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -195,22 +192,22 @@ CMD_CODE its_netinfo_set(char* name, CONFIG_NET* con_net)
 {
 	ITSIP_PACKET set_pak;
 	NET_CONN_INFO conn;
-	itsip_pack(ITS_NETINFO_SET, sizeof(CONFIG_SYS), 0, NULL, &set_pak);
+	itsip_pack(ITS_NETINFO_SET, sizeof(CONFIG_NET), 0, NULL, &set_pak);//20141209
 
 	if(net_conn_connect(&conn) == FAILURE)
-        return CONN_FAILED;
+		return CONN_FAILED;
 
 	if(net_conn_send(&conn, &set_pak.head, (BYTE*)con_net, sizeof(CONFIG_NET)) == FAILURE)
-    {
-        net_conn_close(&conn);
-        return SEND_FAILED;
-    }
+	{
+		net_conn_close(&conn);
+		return SEND_FAILED;
+	}
 
 	if(net_conn_recv(&conn, &set_pak.head, sizeof(ITSIP)) == FAILURE)
-    {
-        net_conn_close(&conn);
-        return RECV_FAILED;
-    }
+	{
+		net_conn_close(&conn);
+		return RECV_FAILED;
+	}
 	net_conn_close(&conn);
 	return set_pak.head.itsip_data[0];
 }
@@ -540,6 +537,41 @@ CMD_CODE its_conf_gpio_query(char* name, CONFIG_GPIO* con_gpio)
 
 }
 
+CMD_CODE its_conf_server_query(char* name, CONFIG_SERVER* con_server)
+{
+	ITSIP_PACKET server_quer_pak;
+	NET_CONN_INFO conn;
+
+	itsip_pack(ITS_SERVER_QUERY, 0, 0, NULL, &server_quer_pak);
+	strcpy((char*)server_quer_pak.head.itsip_user, name);
+	server_quer_pak.head.itsip_data[0] = CONF_SERVER;
+	
+	if(net_conn_connect(&conn) == FAILURE)
+		return CONN_FAILED;
+
+	if(net_conn_send(&conn, &server_quer_pak.head, NULL, 0) == FAILURE)
+	{
+		net_conn_close(&conn);
+		return SEND_FAILED;
+	}
+	if(net_conn_recv(&conn, &server_quer_pak.head, sizeof(ITSIP)) == FAILURE)
+	{
+		net_conn_close(&conn);
+		return FAILURE;
+	}
+
+	if(net_conn_recv(&conn, con_server, server_quer_pak.head.itsip_extlen) == FAILURE)
+	{
+		net_conn_close(&conn);
+		return RECV_FAILED;
+	}
+
+
+	net_conn_close(&conn);
+
+	return QUERY_OK;
+}
+
 //////////////////////////////////////////////////////////////////////////
 ///
 ///     its_conf_mode_query
@@ -660,6 +692,31 @@ CMD_CODE its_conf_com_set(char* name, CONFIG_COM* con_com, BYTE flag)
 	return set_pak.head.itsip_data[0];
 }
 
+CMD_CODE its_conf_server_set(char* name, CONFIG_SERVER* con_server)
+{
+	ITSIP_PACKET set_pak;
+	NET_CONN_INFO conn;
+	itsip_pack(ITS_SERVER_SET, sizeof(CONFIG_SERVER), 0, NULL, &set_pak);
+
+	if(net_conn_connect(&conn) == FAILURE)
+		return CONN_FAILED;
+
+	if(net_conn_send(&conn, &set_pak.head, (BYTE*)con_server, sizeof(CONFIG_SERVER)) == FAILURE)
+	{
+		net_conn_close(&conn);
+		return SEND_FAILED;
+	}
+
+	if(net_conn_recv(&conn, &set_pak.head, sizeof(ITSIP)) == FAILURE)
+	{
+		net_conn_close(&conn);
+		return RECV_FAILED;
+	}
+	net_conn_close(&conn);
+	return set_pak.head.itsip_data[0];
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 ///
 ///     its_conf_mode_set
@@ -730,6 +787,134 @@ CMD_CODE its_conf_lim_set(char* name, CONFIG_LIMIT* con_lim)
 }
 
 
+
+
+#define MAX_SIZE_DNS 1024
+#define SERVER_PORT_DNS 53
+
+void setHead(unsigned char *buf)
+{
+	buf[0] = 0x00;
+	buf[1] = 0;
+	buf[2] = 0x01;
+	buf[3] = 0;
+	buf[4] = 0;
+	buf[5] = 1;
+	buf[6] = 0;
+	buf[7] = 0;
+	buf[8] = buf[9] = buf[10] = buf[11] = 0;
+}
+
+void setQuery(char *name, unsigned char *buf, int len)
+{
+	int i;
+	//strcat(buf+12,name);
+	for(i=0;i<len;i++)
+		buf[12+i] = name[i];
+	int pos = len + 12;
+	
+	buf[pos] = 0;
+	buf[pos+1] = 1;
+	buf[pos+2] = 0;
+	buf[pos+3] = 1;
+}
+int changeDN(char *DN,char *name)
+{
+	int i = strlen(DN) - 1;
+	int j = i + 1;
+	int k;
+	
+	name[j+1] = 0;
+	for(k = 0; i >= 0; i--,j--) {
+		if(DN[i] == '.') {
+			name[j] = k;
+			k = 0;
+		}
+		else {
+			name[j] = DN[i];
+			k++;
+		}
+	}
+	name[0] = k;
+	return (strlen(DN) + 2);
+}
+void printName(int len, char *name)
+{
+	  int i;
+	  for(i = 0; i < len; i++) printf("%x.",name[i]);
+	  printf("\n");
+}
+
+int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_ip)
+{
+	int s;
+	struct sockaddr_in sin;
+
+	memset(&sin,0,sizeof(sin));
+	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
+	sin.sin_addr.s_addr = dns_ip;
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(SERVER_PORT_DNS);
+
+	s = socket(PF_INET,SOCK_DGRAM,0);
+	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));
+	return recv(s,recvMsg,MAX_SIZE_DNS,0);
+
+}
+int resolve(unsigned char *recvMsg, int len, int len_recvMsg, char *ip)
+{
+	int pos = len;
+	int cnt = 12;
+
+	while(pos < len_recvMsg) {		
+		unsigned char now_pos = recvMsg[pos+1];
+		unsigned char retype = recvMsg[pos+3];
+		unsigned char reclass = recvMsg[pos+5];
+		unsigned char offset = recvMsg[pos+11];
+
+		if(retype == 1) {			
+			if(now_pos == cnt && reclass == 1) {
+				//printf("%d.%d.%d.%d\n",recvMsg[pos+12],recvMsg[pos+13],recvMsg[pos+14],recvMsg[pos+15]);
+
+				sprintf(ip, "%d.%d.%d.%d", recvMsg[pos+12],recvMsg[pos+13],recvMsg[pos+14],recvMsg[pos+15]);
+
+				return DNS_OK;
+			}
+		}
+		else if(retype == 5) {			
+			cnt = pos + 12 ;
+		}		
+		pos = pos + 12 + offset;
+	}
+
+	return -1;
+}
+
+
+CMD_CODE its_dns(char *www , unsigned int dns, char *ip)
+{	
+	unsigned char buf[MAX_SIZE_DNS]; /* socket发送的数据 */
+	char *DN=www; /* 将要解析的域名(www.xxx.xxx) */
+	char name[MAX_SIZE_DNS]; /* 转换为符合DNS报文格式的域名 */
+	char recvMsg[MAX_SIZE_DNS]; /* 接收的数据 */
+	int len; /* socket发送数据的长度 */
+	int s; /* socket handler */
+	int i,j;
+	int len_recvMsg;
+	int ret =-1;
+
+	
+
+	len = changeDN(DN,name);	
+	setHead(buf);
+	setQuery(name,buf,len);
+	len += 16;
+	len_recvMsg = sendDNSPacket(buf,len,recvMsg, dns);
+	
+	ret = resolve(recvMsg,len,len_recvMsg, ip);
+
+	return ret;
+}
 
 
 

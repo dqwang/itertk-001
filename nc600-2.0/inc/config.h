@@ -31,11 +31,11 @@
 #define MAX_COM_PORT    1
 #define MAX_SESSION     6
 #define MAX_USR_NUM     16
-/**    本类的功能：打印错误信息
-*
-*     本类是一个单件
-*     在程序中需要进行错误信息打印的地方
-*/
+
+#define SERVER_PORT	8888
+#define SERVER_IP "192.168.1.100"
+
+
 typedef struct tagCONFIG_SYS
 {
     char  host_name[32];
@@ -130,15 +130,26 @@ typedef struct tagCONFIG_GPIO
     int alarm[2];
 }CONFIG_GPIO;
 
+typedef struct tagCONFIG_SERVER
+{
+	DWORD server_ip;/*server ip  / dns name*/	
+	WORD server_port;
+
+}CONFIG_SERVER;
+
+
+
+
 typedef struct tagCONFIG_DATA
 {
-    CONFIG_SYS  con_sys;
-    CONFIG_NET  con_net;
-    CONFIG_VLAN  con_vlan;
-    CONFIG_COM con_com[MAX_COM_PORT];
-    CONFIG_MODE con_mode[MAX_COM_PORT];
-    CONFIG_LIMIT con_lim[MAX_COM_PORT];
-    USR_INFO con_usr[MAX_USR_NUM];
+	CONFIG_SYS  con_sys;
+	CONFIG_NET  con_net;
+	CONFIG_VLAN  con_vlan;
+	CONFIG_COM con_com[MAX_COM_PORT];
+	CONFIG_MODE con_mode[MAX_COM_PORT];
+	CONFIG_LIMIT con_lim[MAX_COM_PORT];
+	USR_INFO con_usr[MAX_USR_NUM];
+	CONFIG_SERVER con_server;
 } CONFI_DATA;
 
 ///全局配置参数声明

@@ -8,8 +8,9 @@
 #include "com.h"
 #include "mode.h"
 #include "gpio.h"
+#include "client.h"
 
-int main ( int argc, char* argv[] )
+int main ( int argc, char **argv )
 {
 	sys_version_show ( stdout );
 	config_init();
@@ -17,11 +18,15 @@ int main ( int argc, char* argv[] )
 	mode_init();
 	com_init();
 	init_gpio();
+	
+	client_init();
+	client_thread();
 
 	while(1)
 	{
 		
 		web_process();
+		
 	}
 	return 0;
 }

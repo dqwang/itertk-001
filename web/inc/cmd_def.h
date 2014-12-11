@@ -22,23 +22,23 @@
 
 typedef enum tagCMD_CODE
 {
-    //connect
-    CONN_FAILED = 1,
-    SEND_FAILED,
-    RECV_FAILED,
+	//connect
+	CONN_FAILED = 1,
+	SEND_FAILED,
+	RECV_FAILED,
 
-    //login
-    LOGIN_OK,
-    NO_USER,
-    ERROR_PSW,
+	//login
+	LOGIN_OK,
+	NO_USER,
+	ERROR_PSW,
 
-    //query
-    QUERY_OK,
-    QUERY_FAILED,
+	//query
+	QUERY_OK,
+	QUERY_FAILED,
 
-    //system set
-    SYS_SET_OK,
-    SYS_SET_FAILED,
+	//system set
+	SYS_SET_OK,
+	SYS_SET_FAILED,
 
 	//net_set
 	NET_SET_OK,
@@ -51,38 +51,47 @@ typedef enum tagCMD_CODE
 	//Factory_set
 	FACTORY_SET_OK,
 	FACTORY_SET_FAILED,
+
+	//user 
+	RC_NOUSR,
+	RC_NORIGHT,
+	RC_USREXIST,
+
+	//user add
+	USR_ADD_OK,
+	USR_ADD_NORIGHT,
+	USR_ADD_FAILED,
+
+	//user del
+	USR_DEL_OK,
+	USR_DEL_NORIGHT,
+	USR_DEL_FAILED,
+
+	//user modify
+	USR_MODIFY_OK,
+	USR_MODIFY_NORIGHT,
+	USR_MODIFY_FAILED,
+
+	//com set
+	COM_SET_OK,
+	COM_SET_FAILED,
+
+	//mode set
+	MODE_SET_OK,
+	MODE_SET_FAILED,
+
+	//limit set
+	LIMIT_SET_OK,
+	LIMIT_SET_FAILED,
+
+	//server set
+	SERVER_SET_OK,
+	SERVER_SET_FAILED,
+
+	//DNS
+	DNS_OK,
+	DNS_FAILED,
 	
-    //user 
-    RC_NOUSR,
-    RC_NORIGHT,
-    RC_USREXIST,
-    
-    //user add
-    USR_ADD_OK,
-    USR_ADD_NORIGHT,
-    USR_ADD_FAILED,
-
-    //user del
-    USR_DEL_OK,
-    USR_DEL_NORIGHT,
-    USR_DEL_FAILED,
-
-    //user modify
-    USR_MODIFY_OK,
-    USR_MODIFY_NORIGHT,
-    USR_MODIFY_FAILED,
-
-    //com set
-    COM_SET_OK,
-    COM_SET_FAILED,
-
-    //mode set
-    MODE_SET_OK,
-    MODE_SET_FAILED,
-
-    //limit set
-    LIMIT_SET_OK,
-    LIMIT_SET_FAILED,
 }CMD_CODE;
 
 
@@ -100,6 +109,7 @@ enum
     CONF_MODE,
     CONF_LIMIT,
     CONF_GPIO,
+    CONF_SERVER,
 };
 
 

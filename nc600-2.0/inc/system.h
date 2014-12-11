@@ -4,8 +4,8 @@
 #include "def.h"
 
 
-#define PRODUCT_NAME    "Itertk UART-NETWORK Gateway"
-#define PROGRAM_VERSION "V1.0"
+#define PRODUCT_NAME    "itertk_sensor"
+#define PROGRAM_VERSION "v1.0"
 
 extern  void sys_version_show ( FILE * stream );
 extern  DWORD sys_str2ip(char *str);

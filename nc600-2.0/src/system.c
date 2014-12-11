@@ -73,14 +73,7 @@ DWORD sys_str2ip ( char *str )
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     ipµØÖ·×Ö·û×ª×ª»»³ÉDWORD
-///     @param ip ipµØÖ·
-///     @return *str ip×Ö·û´®
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010£­04£­24
-//////////////////////////////////////////////////////////////////////////
+
 char* sys_ip2str_static ( DWORD ip )
 {
     BYTE i;
@@ -95,7 +88,6 @@ char* sys_ip2str_static ( DWORD ip )
     }
 
     sprintf ( str, "%d.%d.%d.%d", cIp[0], cIp[1], cIp[2], cIp[3] );
-//    printf("sys_ip2str_static: ip = %d, iIp = %d, str is %s\n", ip, iIp, str);
 
     return str;
 }
@@ -110,13 +102,13 @@ char* sys_ip2str_static ( DWORD ip )
 //////////////////////////////////////////////////////////////////////////
 UQWORD system_mscount_get(void)
 {
-    struct timeval		tv;
-    struct timezone	tz;
-    UQWORD  mscnt = 0;
+	struct timeval	tv;
+	struct timezone	tz;
+	UQWORD  mscnt = 0;
 
-    gettimeofday(&tv, &tz);
-    mscnt = (tv.tv_sec * CLOCKS_PER_MSEC) + (tv.tv_usec / CLOCKS_PER_MSEC);
-    return mscnt;
+	gettimeofday(&tv, &tz);
+	mscnt = (tv.tv_sec * CLOCKS_PER_MSEC) + (tv.tv_usec / CLOCKS_PER_MSEC);
+	return mscnt;
 }
 
 

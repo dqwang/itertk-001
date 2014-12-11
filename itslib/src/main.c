@@ -33,7 +33,7 @@ int TelnetPort = 6000;//console port
 ///     @author     xuliang<gxuliang@gmail.com>
 ///     @date       2010гн04гн24
 //////////////////////////////////////////////////////////////////////////
-int main ( int argc, char* argv[] )
+int main ( int argc, char **argv )
 {
     TRD_t telnet_trd;
     TRD_t console_trd;

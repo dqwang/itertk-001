@@ -14,6 +14,7 @@ all:
 	cd src/upgrade;make
 	cd src/vlan;make
 	cd src/gpio;make
+	cd src/server;make
 clean:
 	cd src/com;make clean
 	cd src/host;make clean
@@ -27,6 +28,8 @@ clean:
 #	cd src/reset;make clean
 	cd src/upgrade;make clean
 #	cd src/vlan;make clean
+	cd src/gpio;make clean
+	cd src/server;make clean
 
 copy:
 	cp cgi-bin/*.cgi /home/jack/n32926/bsp/tftp/start/nand1-2/app/web/cgi-bin

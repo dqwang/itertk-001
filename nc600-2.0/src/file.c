@@ -1,50 +1,12 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright (c) 2010, 浙江共创技术有限公司
-///    All rights reserved.
-///
-/// @file  file.c
-/// @brief  文件相关操作
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010－04－24
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////
-
 #include <stdio.h>
 #include <unistd.h>
 #include "file.h"
 
-
-
-
-//////////////////////////////////////////////////////////////////////////
-///
-///     判断文件是否存在
-///     @param  file_name   文件名
-///     @return 1－存在 0－不存在
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
 int file_is_existed(const char *file_name)
 {
     return access(file_name, F_OK) == 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     打开文件句柄
-///     @param  file_name   文件名
-///     @param  flags   打开属性
-///     @return 文件句柄
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
 FILE *sys_file_open(char *file_name, DWORD flags)
 {
     FILE *fp = NULL;
@@ -94,54 +56,36 @@ FILE *sys_file_open(char *file_name, DWORD flags)
     return fp;
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     将数据写入文件
-///     @param  file_hd   文件
-///     @param  *data   数据
-///     @param  count   数据长度
-///     @return SUCCESS FAILURE
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 int sys_file_write(FILE *file_hd, void *data, DWORD count)
 {
-    BYTE *p_data = data;
-    DWORD write_cnt = 0;
+	BYTE *p_data = data;
+	DWORD write_cnt = 0;
 
-    if (count == 0 || data == NULL || file_hd == NULL)
-    {
-        return FAILURE;
-    }
+	if (count == 0 || data == NULL || file_hd == NULL)
+	{
+		return FAILURE;
+	}
 
-    while (1)
-    {
-        write_cnt = fwrite(p_data, 1, count, file_hd);
+	while (1)
+	{
+		write_cnt = fwrite(p_data, 1, count, file_hd);
 
-        if (write_cnt == count)
-        {
-            break;
-        }
-        else
-        {
-            p_data += write_cnt;
-            count -= write_cnt;
-        }
-    }
+		if (write_cnt == count)
+		{
+			break;
+		}
+		else
+		{
+			p_data += write_cnt;
+			count -= write_cnt;
+		}
+	}
 
-    return SUCCESS;
+	return SUCCESS;
 //	return
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     从文件读出数据
-///     @param  file_hd   文件
-///     @param  *data   数据
-///     @param  count   数据长度
-///     @return 读出数据长度
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 int sys_file_read(FILE *file_hd, void *buf, DWORD count)
 {
     if (count == 0)
@@ -157,13 +101,7 @@ int sys_file_read(FILE *file_hd, void *buf, DWORD count)
 
     return ret;
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     关闭文件句柄
-///     @param  file_hd   文件
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 void sys_file_close( FILE *fp )
 {
 

@@ -62,6 +62,12 @@ typedef signed int              BOOL;
 typedef unsigned long long      UQWORD;
 typedef long long               SQWORD;
 
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+
+
+
 #ifndef NULL
 #define NULL 0
 #endif

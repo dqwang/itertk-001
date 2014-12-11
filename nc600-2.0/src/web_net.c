@@ -1,21 +1,6 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright (c) 2010, 浙江共创技术有限公司
-///    All rights reserved.
-///
-/// @file   main.c
-/// @brief  主流程的贯穿
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010-04-24
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////
-
+/*
+*
+*/
 #include <string.h>
 #include "web_net.h"
 #include "log.h"
@@ -23,276 +8,236 @@
 #include "config.h"
 #include "cmd_def.h"
 #include "gpio.h"
+#include "client.h"
 
 NET_CONN_INFO g_client_conn[MAX_TCP_CONN];
 static int g_listen_conn = -1;	//! server listening socket
 static int m_max_sock = -1;		//! max socket handle
 
+extern int g_reconnect_flag;
+
 
 int net_conn_send(NET_CONN_INFO *conn_info, ITSIP *net_head, BYTE* net_data, DWORD len);
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     web 模块创建socket连接
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
 static void web_svr_start(void)
 {
-    int flag = 0;
-    int ret = -1;
-    struct sockaddr_in server_addr;
-    int sndlen;
+	    int flag = 0;
+	    int ret = -1;
+	    struct sockaddr_in server_addr;
+	    int sndlen;
 
-    g_listen_conn = socket(AF_INET, SOCK_STREAM, 0);
+	g_listen_conn = socket(AF_INET, SOCK_STREAM, 0);
+	sys_log(FUNC, LOG_DBG, "[sock_fd %d]socket\n",g_listen_conn);
+	if (g_listen_conn == -1){
+		perror("web_svr_start: socket");
+		return;
+	}
 
-    if (g_listen_conn == -1)
-    {
-        perror("web_svr_start: socket");
-        return;
-    }
+	// Enable address reuse and keeplive
+	flag = ON;
+	ret = setsockopt(g_listen_conn, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
 
-    // Enable address reuse and keeplive
-    flag = ON;
-    ret = setsockopt(g_listen_conn, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+	if (ret == -1){
+		perror("net_server_start: setsockopt()");
+		return;
+	}
 
-    if (ret == -1)
-    {
-        perror("net_server_start: setsockopt()");
-        return;
-    }
+	//	Enable keeplive
+	ret = setsockopt(g_listen_conn, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag));
 
-    //	Enable keeplive
-    ret = setsockopt(g_listen_conn, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag));
+	if (ret == -1){
+		perror("net_server_start: setsockopt()");
+		return;
+	}
 
-    if (ret == -1)
-    {
-        perror("net_server_start: setsockopt()");
-        return;
-    }
+	sndlen = 16 * 1024;
+	ret = setsockopt(g_listen_conn, SOL_SOCKET, SO_SNDBUF, &sndlen, sizeof(int));
 
-    sndlen = 16 * 1024;
-    ret = setsockopt(g_listen_conn, SOL_SOCKET, SO_SNDBUF, &sndlen, sizeof(int));
+	if (ret == -1){
+		perror("net_server_start: setsockopt()");
+		return;
+	}
+	
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = INADDR_ANY;
+	server_addr.sin_port = htons(WEB_PORT);
+	memset(server_addr.sin_zero, 0, sizeof(server_addr.sin_zero));
 
-    if (ret == -1)
-    {
-        perror("net_server_start: setsockopt()");
-        return;
-    }
+	while (bind(g_listen_conn, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)  {
+		perror("net_server_start: bind");
+		//close(g_listen_conn);
 
+		//return;
+		sleep(3);
+	}
+	sys_log(FUNC, LOG_DBG, "[sock_fd %d]bind...\n",g_listen_conn);
+	
+	if (listen(g_listen_conn, MAX_TCP_CONN) == -1){
+		perror("web_svr_start: listen");
+		close(g_listen_conn);
 
-
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(WEB_PORT);
-    memset(server_addr.sin_zero, 0, sizeof(server_addr.sin_zero));
-
-    while (bind(g_listen_conn, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
-    {
-        perror("net_server_start: bind");
-        //close(g_listen_conn);
-
-        //return;
-        sleep(3);
-    }
-
-    if (listen(g_listen_conn, MAX_TCP_CONN) == -1)
-    {
-        perror("web_svr_start: listen");
-        close(g_listen_conn);
-
-        return;
-    }
-
-    m_max_sock = g_listen_conn;
-    sys_log(FUNC, LOG_MSG, "Waiting for network connection ...\n");
+		return;
+	}
+	sys_log(FUNC, LOG_DBG, "[sock_fd %d]listen...\n",g_listen_conn);
+	m_max_sock = g_listen_conn;
+	
+	sys_log(FUNC, LOG_DBG, "APP Server start ...WEB_PORT :%d\n", WEB_PORT);
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     web 模块初始化
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
+
 void web_init(void)
 {
-    int i = -1;
+	int i = -1;
 
-    FOR (i , MAX_TCP_CONN)
-    {
-        memset(&g_client_conn[i], 0, sizeof(NET_CONN_INFO));
-        g_client_conn[i].conn_idx = -1;
-        g_client_conn[i].client_conn = -1;
-        g_client_conn[i].user = NULL;
-        g_client_conn[i].idle = 0;
-        g_client_conn[i].file_type = 0xff;
-        trd_lock_init(&g_client_conn[i].lock);
-    }
+	FOR (i , MAX_TCP_CONN){
+		memset(&g_client_conn[i], 0, sizeof(NET_CONN_INFO));
+		g_client_conn[i].conn_idx = -1;
+		g_client_conn[i].client_conn = -1;
+		g_client_conn[i].user = NULL;
+		g_client_conn[i].idle = 0;
+		g_client_conn[i].file_type = 0xff;
+		trd_lock_init(&g_client_conn[i].lock);
+	}
 
-    web_svr_start();
+	web_svr_start();
 }
 
-
-//////////////////////////////////////////////////////////////////////////
-///
-///     关闭连接
-///     @param  *conn_info  连接信息
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
 void net_conn_close(NET_CONN_INFO *conn_info)
 {
     
-    sys_log(FUNC, LOG_MSG, "Connection <%d> closed.\n", conn_info->conn_idx);
-
-    if (conn_info->client_conn > 0)
-    {
-        close(conn_info->client_conn);
-
-        conn_info->client_conn = -1;
-        conn_info->file_type = 0xff;
-
-    }
+	if (conn_info->client_conn > 0){
+		close(conn_info->client_conn);
+		sys_log(FUNC, LOG_WARN, "[sock_fd %d]close\n", conn_info->client_conn);
+		conn_info->client_conn = -1;
+		conn_info->file_type = 0xff;
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     接收指定连接的指定长度的内容
-///     @param  *conn_info  连接信息
-///     @param  *net_data  接收内容
-///     @param  len  接收长度
-///     @return SUCCESS/FAILURE
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
 static int web_conn_recv(NET_CONN_INFO *conn_info, void *net_data, DWORD len)
 {
-    BYTE *p_net_data = NULL;
-    int recv_cnt = 0;
-    int total_length = 0;
-    fd_set readfds;
-    int res = -1;
-    struct timeval tv;
-    UQWORD ms_cnt1 = 0LLU;
-    UQWORD ms_cnt2 = 0LLU;
-    UQWORD ms_cnt3 = 0LLU;
+	BYTE *p_net_data = NULL;
+	int recv_cnt = 0;
+	int total_length = 0;
+	fd_set readfds;
+	int res = -1;
+	struct timeval tv;
+	UQWORD ms_cnt1 = 0LLU;
+	UQWORD ms_cnt2 = 0LLU;
+	UQWORD ms_cnt3 = 0LLU;
 
-    if (conn_info->client_conn <= 0)
-    {
-        return FAILURE;
-    }
+	if (conn_info->client_conn <= 0)	
+		return FAILURE;	
 
-    p_net_data = net_data;
-    total_length = len;
+	p_net_data = net_data;
+	total_length = len;
 
-    ms_cnt1 = system_mscount_get();
+	ms_cnt1 = system_mscount_get();
 
-    while (1)
-    {
-        FD_ZERO(&readfds);
-        FD_SET(conn_info->client_conn, &readfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 1000;
+	while (1)
+	{
+		FD_ZERO(&readfds);
+		FD_SET(conn_info->client_conn, &readfds);
+		tv.tv_sec = 0;
+		tv.tv_usec = 1000;
 
-        res = select(conn_info->client_conn + 1, &readfds, NULL, NULL, &tv);
+		res =-1;
+		sys_log(FUNC,  LOG_DBG,  "selecting\n");
+		res = select(conn_info->client_conn + 1, &readfds, NULL, NULL, &tv);
+		sys_log(FUNC, LOG_DBG, "[sock_fd %d]select %d\n", conn_info->client_conn, res);
+		if (res < 0){
+		
+			if (errno == EINTR)
+			{
+				continue;/*for signal interrupt, do not close the socket, please continue.*/
+			}
+			perror("web_conn_recv:select");
+			net_conn_close(conn_info);
+			return FAILURE;
+		}
+		else if (res > 0)
+		{
+			if (FD_ISSET(conn_info->client_conn, &readfds)){
+				sys_log(FUNC, LOG_DBG, "[sock_fd %d]recving\n", conn_info->client_conn);
+				recv_cnt  = recv(conn_info->client_conn, p_net_data, total_length, MSG_DONTWAIT | MSG_NOSIGNAL);
+				sys_log(FUNC, LOG_DBG, "[sock_fd %d]recv %d bytes\n", conn_info->client_conn, recv_cnt);
+				ms_cnt1 = system_mscount_get();
+			}
+		}
+		else
+		{
+			ms_cnt2 = system_mscount_get();
 
-        if (res < 0)
-        {
-            /*
-             * note by xuw 2007/03/02: for signal interrupt, do not close the socket, only continue.
-             */
-            if (errno == EINTR)
-            {
-                continue;
-            }
+			//If the return value of select() is still Zero after 500ms, Close the socket
+			//if ((ms_cnt2 > ms_cnt1) && ((ms_cnt2 - ms_cnt1 )>= TIMEOUT_CNT)){
 
-            perror("web_conn_recv:select");
-            net_conn_close(conn_info);
+			if ((ms_cnt2 > ms_cnt1) && ((ms_cnt2 - ms_cnt1 )>= TIMEOUT_CNT)){
+				net_conn_close(conn_info);
+				sys_log(FUNC, LOG_ERR, "web_conn_recv: Client no response in %llu ms, we must Close this socket.\n", ms_cnt2 - ms_cnt1);
+				return FAILURE;
+			}
 
-            return FAILURE;
-        }
-        else if (res > 0)
-        {
-            if (FD_ISSET(conn_info->client_conn, &readfds))
-            {
-                recv_cnt  = recv(conn_info->client_conn, p_net_data, total_length, MSG_DONTWAIT | MSG_NOSIGNAL);
-                ms_cnt1 = system_mscount_get();
-            }
-        }
-        else
-        {
-            ms_cnt2 = system_mscount_get();
+			continue;
+		}
 
-            //If the return value of select() is still Zero after 500ms, Close the socket
-            if (ms_cnt2 > ms_cnt1 && ms_cnt2 - ms_cnt1 >= TIMEOUT_CNT)
-            {
-                net_conn_close(conn_info);
-                sys_log(FUNC, LOG_ERR, "web_conn_recv: Client no response in %llu ms, we must Close this socket.\n", ms_cnt2 - ms_cnt1);
-                return FAILURE;
-            }
+		if (recv_cnt == -1)
+		{
+			perror("web_conn_recv:recv");
 
-            continue;
-        }
+			if (errno == ECONNRESET)
+			{
+				net_conn_close(conn_info);
+			}
 
-        if (recv_cnt == -1)
-        {
-            perror("web_conn_recv:recv");
+			return FAILURE;
+		}
 
-            if (errno == ECONNRESET)
-            {
-                net_conn_close(conn_info);
-            }
+		if (recv_cnt == 0)
+		{
+			net_conn_close(conn_info);
 
-            return FAILURE;
-        }
+			return FAILURE;
+		}
 
-        if (recv_cnt == 0)
-        {
-            net_conn_close(conn_info);
+		if (total_length - recv_cnt == 0)
+		{
+			return SUCCESS;
+		}
+		else
+		{
+			ms_cnt3 = system_mscount_get();
 
-            return FAILURE;
-        }
+			//If the return value of select() is still Zero after 500ms, Close the socket
+			if (ms_cnt3 > ms_cnt1 && ms_cnt3 - ms_cnt1 >= TIMEOUT_CNT)
+			{
+				//We must close this socket and return FAILURE when the client is in problem.
+				//Otherwise system will stop to capture picture and video
+				net_conn_close(conn_info);
+				sys_log(FUNC, LOG_ERR, "net_conn_recv: Client has something wrong, we must Close this socket.\n");
+				return FAILURE;
+			}
 
-        if (total_length - recv_cnt == 0)
-        {
-            return SUCCESS;
-        }
-        else
-        {
-            ms_cnt3 = system_mscount_get();
-
-            //If the return value of select() is still Zero after 500ms, Close the socket
-            if (ms_cnt3 > ms_cnt1 && ms_cnt3 - ms_cnt1 >= TIMEOUT_CNT)
-            {
-                //We must close this socket and return FAILURE when the client is in problem.
-                //Otherwise system will stop to capture picture and video
-                net_conn_close(conn_info);
-                sys_log(FUNC, LOG_ERR, "net_conn_recv: Client has something wrong, we must Close this socket.\n");
-                return FAILURE;
-            }
-
-            p_net_data += recv_cnt;
-            total_length -= recv_cnt;
-        }
-    }
+			p_net_data += recv_cnt;
+			total_length -= recv_cnt;
+		}
+	}
 }
 
 int sys_usr_login(char *name, char* psw)
 {
-    int i;
+	int i;
 
- //  printf(" XXX :name=%s, psw=%s\n", name, psw);
-	
-    FOR(i, MAX_USR_NUM)
-    {
-        if(strcmp(name, (char*)g_conf_info.con_usr[i].usr_name) == 0)
-        {
-            if(strcmp(psw, (char*)g_conf_info.con_usr[i].usr_passwd) == 0)
-                return LOGIN_OK;
+	sys_log(FUNC, LOG_MSG, "name %s, passwd %d", name, psw);
+
+	FOR(i, MAX_USR_NUM)
+	{
+		if(strcmp(name, (char*)g_conf_info.con_usr[i].usr_name) == 0)
+		{
+			if(strcmp(psw, (char*)g_conf_info.con_usr[i].usr_passwd) == 0)
+				return LOGIN_OK;
 			else
 				return ERROR_PSW;
-        }        
-    }
-    return NO_USER;
+		}        
+	}
+	return NO_USER;
 }
 
 void sys_usr_query(NET_CONN_INFO *conn_info, BYTE *usr_name)
@@ -379,6 +324,7 @@ BYTE get_usr_id(BYTE* name)
     return i;
 }
 
+
 void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 {
     ITSIP_PACKET its_ack_pak;
@@ -450,6 +396,17 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 	
   	}
 	break;
+
+	case CONF_SERVER:{
+		CONFIG_SERVER config_server;
+		itsip_pack(ITS_ACK_CONF_QUERY, sizeof(CONFIG_SERVER), 0, NULL, &its_ack_pak);
+
+		its_ack_pak.head.itsip_data[0] = 0;
+		net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&config_server, sizeof(CONFIG_SERVER));
+		
+	}break;
+
+
     default:
         break;
     }
@@ -464,6 +421,19 @@ int sys_sysinfo_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
     config_save(&g_conf_info);
     return SYS_SET_OK;
 }
+
+int sys_server_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
+{
+	CONFIG_SERVER conf_server;
+	if(web_conn_recv(conn_info, &conf_server, sizeof(CONFIG_SERVER)) == FAILURE)
+		return SERVER_SET_FAILED;
+	memcpy(&g_conf_info.con_server, &conf_server, sizeof(CONFIG_SERVER));
+	sys_log(FUNC, LOG_MSG, "server  updated  ip: %s, port:%d", sys_ip2str_static(g_conf_info.con_server.server_ip), g_conf_info.con_server.server_port);
+	
+	config_save(&g_conf_info);
+	return SERVER_SET_OK;
+}
+
 
 extern void config_net_set(CONFIG_NET *pConf);
 
@@ -577,386 +547,398 @@ int sys_conf_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 }
 int net_conn_send_pkt(NET_CONN_INFO *conn_info, void *net_data, int len)
 {
-    BYTE *ptr = NULL;
-    int send_cnt = 0;
-    int total_length = 0;
-    fd_set writefds;
-    struct timeval tv;
-    int res = -1;
-    UQWORD ms_cnt1 = 0LLU;
-    UQWORD ms_cnt2 = 0LLU;
-    UQWORD ms_cnt3 = 0LLU;
+	BYTE *ptr = NULL;
+	int send_cnt = 0;
+	int total_length = 0;
+	fd_set writefds;
+	struct timeval tv;
+	int res = -1;
+	UQWORD ms_cnt1 = 0LLU;
+	UQWORD ms_cnt2 = 0LLU;
+	UQWORD ms_cnt3 = 0LLU;
 
-    if (conn_info->client_conn <= 0)
-    {
-        return FAILURE;
+	if (conn_info->client_conn <= 0)
+	{
+		return FAILURE;
 
-    }
+	}
 
-    conn_info->idle = 0;
-    ms_cnt1 = system_mscount_get();
+	conn_info->idle = 0;
+	ms_cnt1 = system_mscount_get();
 
-    ptr = (BYTE*)net_data;
-    total_length = len;
+	ptr = (BYTE*)net_data;
+	total_length = len;
 
-    while (1)
-    {
-        FD_ZERO(&writefds);
-        FD_SET(conn_info->client_conn, &writefds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 10000;
+	while (1)
+	{
+		FD_ZERO(&writefds);
+		FD_SET(conn_info->client_conn, &writefds);
+		tv.tv_sec = 0;
+		tv.tv_usec = 10000;
+		res =-1;
+		
+		sys_log(FUNC,  LOG_DBG,  "selecting\n");
+		res = select(conn_info->client_conn + 1, NULL, &writefds, NULL, &tv);
+		sys_log(FUNC,  LOG_DBG,  "select %d\n", res);
+		if (res < 0)
+		{
+			/*
+			* note by xuw 2007/03/02: for signal interrupt, do not close the socket, only continue.
+			*/
+			if (errno == EINTR)
+			{
+				continue;
+			}
 
-        res = select(conn_info->client_conn + 1, NULL, &writefds, NULL, &tv);
+			perror("net_conn_send:select");
+			net_conn_close(conn_info);
+			return FAILURE;
+		}
+		else if (res > 0)
+		{
+			if (FD_ISSET(conn_info->client_conn, &writefds))
+			{
+				send_cnt = send(conn_info->client_conn, ptr, total_length, MSG_DONTWAIT | MSG_NOSIGNAL);
+				//				ms_cnt1 = system_mscount_get();
+				sys_log(FUNC,  LOG_DBG,  "send %d bytes\n", send_cnt);
+			}
+		}
+		else
+		{
+			ms_cnt2 = system_mscount_get();
 
-        if (res < 0)
-        {
-            /*
-             * note by xuw 2007/03/02: for signal interrupt, do not close the socket, only continue.
-             */
-            if (errno == EINTR)
-            {
-                continue;
-            }
+			//If the return value of select() is still Zero after 500ms, Close the socket
+			if (ms_cnt2 > ms_cnt1 && ms_cnt2 - ms_cnt1 >= TIMEOUT_CNT)
+			{
+				net_conn_close(conn_info);
+				printf("MS_CNT1: %llu, MS_CNT2: %llu.\n", ms_cnt1, ms_cnt2);
+				printf("net_conn_send: Client has no response in %llu ms, we must Close this socket.\n", ms_cnt2 - ms_cnt1);
+				return FAILURE;
+			}
 
-            perror("net_conn_send:select");
-            net_conn_close(conn_info);
-            return FAILURE;
-        }
-        else if (res > 0)
-        {
-            if (FD_ISSET(conn_info->client_conn, &writefds))
-            {
-                send_cnt = send(conn_info->client_conn, ptr, total_length, MSG_DONTWAIT | MSG_NOSIGNAL);
-                //				ms_cnt1 = system_mscount_get();
-            }
-        }
-        else
-        {
-            ms_cnt2 = system_mscount_get();
+			continue;
+		}
 
-            //If the return value of select() is still Zero after 500ms, Close the socket
-            if (ms_cnt2 > ms_cnt1 && ms_cnt2 - ms_cnt1 >= TIMEOUT_CNT)
-            {
-                net_conn_close(conn_info);
-                printf("MS_CNT1: %llu, MS_CNT2: %llu.\n", ms_cnt1, ms_cnt2);
-                printf("net_conn_send: Client has no response in %llu ms, we must Close this socket.\n", ms_cnt2 - ms_cnt1);
-                return FAILURE;
-            }
+		if (send_cnt == -1)
+		{
+			perror("net_conn_send:send");
+			net_conn_close(conn_info);
+			return FAILURE;
+		}
 
-            continue;
-        }
+		if (send_cnt == 0)
+		{
+			net_conn_close(conn_info);
 
-        if (send_cnt == -1)
-        {
-            perror("net_conn_send:send");
-            net_conn_close(conn_info);
-            return FAILURE;
-        }
+			return FAILURE;
+		}
 
-        if (send_cnt == 0)
-        {
-            net_conn_close(conn_info);
+		if (total_length - send_cnt == 0)
+		{
+			return SUCCESS;
+		}
+		else
+		{
+			ms_cnt3 = system_mscount_get();
 
-            return FAILURE;
-        }
+			//If the return value of select() is still Zero after 500ms, Close the socket
+			if (ms_cnt3 > ms_cnt1 && ms_cnt3 - ms_cnt1 >= TIMEOUT_CNT)
+			{
+				//We must close this socket and return FAILURE when the client is in problem.
+				//Otherwise system will stop to capture picture and video
+				net_conn_close(conn_info);
+				printf("net_conn_send: Client has something wrong, we must Close this socket.\n");
+				return FAILURE;
+			}
 
-        if (total_length - send_cnt == 0)
-        {
-            return SUCCESS;
-        }
-        else
-        {
-            ms_cnt3 = system_mscount_get();
-
-            //If the return value of select() is still Zero after 500ms, Close the socket
-            if (ms_cnt3 > ms_cnt1 && ms_cnt3 - ms_cnt1 >= TIMEOUT_CNT)
-            {
-                //We must close this socket and return FAILURE when the client is in problem.
-                //Otherwise system will stop to capture picture and video
-                net_conn_close(conn_info);
-                printf("net_conn_send: Client has something wrong, we must Close this socket.\n");
-                return FAILURE;
-            }
-
-            ptr += send_cnt;
-            total_length -= send_cnt;
-        }
-    }
+			ptr += send_cnt;
+			total_length -= send_cnt;
+		}
+	}
 }
-//////////////////////////////////////////////////////////////////////////
-///
-///     发送消息
-///     @param  *conn_info  连接信息
-///     @param  *net_head   协议头
-///     @param  *net_data   扩展数据
-///     @param  len   扩展长度
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-26
-//////////////////////////////////////////////////////////////////////////
+
 int net_conn_send(NET_CONN_INFO *conn_info, ITSIP *net_head, BYTE* net_data, DWORD len)
 {
+	int ret;
 
-    int ret;
-
-    TS_LOCK(&conn_info->lock);
-    ret = net_conn_send_pkt(conn_info, net_head, sizeof(ITSIP));
-    if(net_data != NULL && len > 0)
-        ret = net_conn_send_pkt(conn_info, net_data, MAX_LENGTH);
-    TS_UNLOCK(&&conn_info->lock);
-    return ret;
+	TS_LOCK(&conn_info->lock);
+	sys_log(FUNC,  LOG_DBG,  "header packet\n");
+	ret = net_conn_send_pkt(conn_info, net_head, sizeof(ITSIP));
+	if(net_data != NULL && len > 0){
+		sys_log(FUNC,  LOG_DBG,  "data packet\n");
+		ret = net_conn_send_pkt(conn_info, net_data, MAX_LENGTH);
+	}		
+	TS_UNLOCK(&&conn_info->lock);
+	return ret;
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     协议处理
-///     @param  *p_net_head   协议头
-///     @param  *conn_info  连接信息
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
+
 static void web_cmd_proc(ITSIP *p_net_head, NET_CONN_INFO *conn_info)
 {
-    int ret;
-    ITSIP_PACKET its_ack_pak;
-    if (conn_info->client_conn < 1)
-    {
-        return;
-    }
+	int ret;
+	ITSIP_PACKET its_ack_pak;
+	
+	if (conn_info->client_conn < 1)	
+		return;
+	
+	if (p_net_head->itsip_head == ITS_HEAD)
+	{
+		switch (p_net_head->itsip_cmd)
+		{
+			case ITS_LOGIN:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_LOGIN+++");
+				ret = sys_usr_login((char*)p_net_head->itsip_user, (char*)p_net_head->itsip_data);
+				itsip_pack(ITS_ACK_LOGIN, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
+			
+			case ITS_USER_QUERY:{
+				
+				sys_log(FUNC, LOG_MSG, "+++ITS_USER_QUERY+++");
+				sys_usr_query(conn_info, p_net_head->itsip_user);
+			}break;
+			
+			case ITS_USER_SET:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_USER_SET+++");
+				ret = sys_usr_set(conn_info, p_net_head);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
+			
+			case ITS_SYSINFO_QUERY:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_SYSINFO_QUERY+++");
+				itsip_pack(ITS_ACK_SYSINFO_QUERY, sizeof(g_conf_info.con_sys), 0, NULL, &its_ack_pak);
+				net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_sys, sizeof(g_conf_info.con_sys));
+			}break;
+			
+			case ITS_SYSINFO_SET:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_SYSINFO_SET+++");
+				ret = sys_sysinfo_set(conn_info, p_net_head);
+				itsip_pack(ITS_ACK_SYSINFO_SET, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
+			case ITS_CONF_QUERY:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_CONF_QUERY+++");
+				sys_conf_query(conn_info, p_net_head);
+			}break;
+			case ITS_CONF_SET:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_CONF_SET+++");
+				ret = sys_conf_set(conn_info, p_net_head);
+				itsip_pack(ITS_ACK_CONF_SET, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
+			
+			case ITS_NETINFO_QUERY:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_NETINFO_QUERY+++");
+				itsip_pack(ITS_ACK_NETINFO_QUERY, sizeof(g_conf_info.con_net), 0, NULL, &its_ack_pak);
+				net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_net, sizeof(g_conf_info.con_net));
+			}break;
+			
+			case ITS_NETINFO_SET:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_NETINFO_SET+++");
+				ret = sys_netinfo_set(conn_info, p_net_head);
+				itsip_pack(ITS_ACK_NETINFO_SET, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
+			
+			case ITS_VLAN_QUERY:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_ACK_VLAN_QUERY+++");
+				itsip_pack(ITS_ACK_VLAN_QUERY, sizeof(g_conf_info.con_vlan), 0, NULL, &its_ack_pak);
+				net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_vlan, sizeof(g_conf_info.con_vlan));
+			}break;
+			
+			case ITS_VLAN_SET:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_VLAN_SET+++");
+				ret = sys_vlan_set(conn_info, p_net_head);
+				itsip_pack(ITS_ACK_VLAN_SET, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
+			
+			case ITS_FACTORY_SET:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_FACTORY_SET+++");
+				ret = sys_factory_set(conn_info, p_net_head);
+				itsip_pack(ITS_ACK_FACTORY_SET, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
 
- //  printf(" XXX : p_net_head->itsip_head =%d, p_net_head->itsip_cmd=%d\n", p_net_head->itsip_head,p_net_head->itsip_cmd);
+			case ITS_SERVER_QUERY:{
+				sys_log(FUNC, LOG_MSG, "---ITS_SERVER_QUERY---%s %d", \
+					sys_ip2str_static(g_conf_info.con_server.server_ip), g_conf_info.con_server.server_port);
+						
+				itsip_pack(ITS_ACK_SERVER_QUERY, sizeof(g_conf_info.con_server), 0, NULL, &its_ack_pak);
+				net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_server, sizeof(g_conf_info.con_server));
+			}break;
 
-    if (p_net_head->itsip_head == ITS_HEAD)
-    {
-        switch (p_net_head->itsip_cmd)
-        {
-        case ITS_LOGIN:
-            sys_log(FUNC, LOG_MSG, "+++ITS_LOGIN+++");
-            ret = sys_usr_login((char*)p_net_head->itsip_user, (char*)p_net_head->itsip_data);
-            itsip_pack(ITS_ACK_LOGIN, 0, 0, NULL, &its_ack_pak);
-            its_ack_pak.head.itsip_data[0] = ret;
-            net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
-            break;
-		case ITS_USER_QUERY:
-            sys_log(FUNC, LOG_MSG, "+++ITS_USER_QUERY+++");
-			sys_usr_query(conn_info, p_net_head->itsip_user);
-			break;
-		case ITS_USER_SET:
-            sys_log(FUNC, LOG_MSG, "+++ITS_USER_SET+++");
-            ret = sys_usr_set(conn_info, p_net_head);
-            its_ack_pak.head.itsip_data[0] = ret;
-            net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
-			break;
-        case ITS_SYSINFO_QUERY:
-            sys_log(FUNC, LOG_MSG, "+++ITS_SYSINFO_QUERY+++");
-            itsip_pack(ITS_ACK_SYSINFO_QUERY, sizeof(g_conf_info.con_sys), 0, NULL, &its_ack_pak);
-            net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_sys, sizeof(g_conf_info.con_sys));
-            break;
-        case ITS_SYSINFO_SET:
-            sys_log(FUNC, LOG_MSG, "+++ITS_SYSINFO_SET+++");
-            ret = sys_sysinfo_set(conn_info, p_net_head);
-            itsip_pack(ITS_ACK_SYSINFO_SET, 0, 0, NULL, &its_ack_pak);
-            its_ack_pak.head.itsip_data[0] = ret;
-            net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
-            break;
-        case ITS_CONF_QUERY:
-            sys_log(FUNC, LOG_MSG, "+++ITS_CONF_QUERY+++");
-            sys_conf_query(conn_info, p_net_head);
-            break;
-        case ITS_CONF_SET:
-            sys_log(FUNC, LOG_MSG, "+++ITS_CONF_SET+++");
-            ret = sys_conf_set(conn_info, p_net_head);
-            itsip_pack(ITS_ACK_CONF_SET, 0, 0, NULL, &its_ack_pak);
-            its_ack_pak.head.itsip_data[0] = ret;
-            net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
-            break;
-        case ITS_NETINFO_QUERY:
-        	sys_log(FUNC, LOG_MSG, "+++ITS_NETINFO_QUERY+++");
-        	itsip_pack(ITS_ACK_NETINFO_QUERY, sizeof(g_conf_info.con_net), 0, NULL, &its_ack_pak);
-		net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_net, sizeof(g_conf_info.con_net));
-		break;
-	case ITS_NETINFO_SET:
-		sys_log(FUNC, LOG_MSG, "+++ITS_NETINFO_SET+++");
-		ret = sys_netinfo_set(conn_info, p_net_head);
-		itsip_pack(ITS_ACK_NETINFO_SET, 0, 0, NULL, &its_ack_pak);
-		its_ack_pak.head.itsip_data[0] = ret;
-		net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
-		break;
-	case ITS_VLAN_QUERY:
-        	sys_log(FUNC, LOG_MSG, "+++ITS_ACK_VLAN_QUERY+++");
-        	itsip_pack(ITS_ACK_VLAN_QUERY, sizeof(g_conf_info.con_vlan), 0, NULL, &its_ack_pak);
-		net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_vlan, sizeof(g_conf_info.con_vlan));
-		break;
-	case ITS_VLAN_SET:
-		sys_log(FUNC, LOG_MSG, "+++ITS_VLAN_SET+++");
-		ret = sys_vlan_set(conn_info, p_net_head);
-		itsip_pack(ITS_ACK_VLAN_SET, 0, 0, NULL, &its_ack_pak);
-		its_ack_pak.head.itsip_data[0] = ret;
-		net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
-		break;
-	case ITS_FACTORY_SET:
-		sys_log(FUNC, LOG_MSG, "+++ITS_FACTORY_SET+++");
-		ret = sys_factory_set(conn_info, p_net_head);
-		itsip_pack(ITS_ACK_FACTORY_SET, 0, 0, NULL, &its_ack_pak);
-		its_ack_pak.head.itsip_data[0] = ret;
-		net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
-		break;
-        default:
-            sys_log(FUNC, LOG_WARN, "+++Unknown cmd[0x%x]+++", p_net_head->itsip_cmd);
-            break;
-        }
-    }
+			case ITS_SERVER_SET:{
+				sys_log(FUNC, LOG_MSG, "---ITS_SERVER_SET---");
+				ret = sys_server_set(conn_info, p_net_head);
+				itsip_pack(ITS_ACK_SERVER_SET, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);	
+
+				if (ret == SERVER_SET_OK){
+					//client_reconnect();
+					g_reconnect_flag = RECONNECT_ON;
+				}
+			}break;		
+
+
+			default:{
+			sys_log(FUNC, LOG_WARN, "+++Unknown cmd[0x%x]+++", p_net_head->itsip_cmd);
+			}break;
+		}
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     协议预处理
-///     @param  *conn_info  连接信息
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
 static void web_svr_proc(NET_CONN_INFO *conn_info)
 {
-    int net_recv_ret = -1;
-    ITSIP net_data;
+	int net_recv_ret = -1;
+	ITSIP net_data;
 
-    if (conn_info->client_conn < 1)
-    {
-        return;
-    }
+	if (conn_info->client_conn < 1){
+		return;
+	}
 
-    memset(&net_data, 0, sizeof(ITSIP));
+	memset(&net_data, 0, sizeof(ITSIP));
 
-    if ((net_recv_ret = web_conn_recv(conn_info, &net_data, sizeof(ITSIP))) == FAILURE)
-    {
-        return;
-    }
+	if ((net_recv_ret = web_conn_recv(conn_info, &net_data, sizeof(ITSIP))) == FAILURE)	{
+		return;
+	}
+	sys_log(FUNC, LOG_DBG, "[sock_fd %d] Is  ITSIP Header\n", conn_info->client_conn);
 
-    web_cmd_proc(&net_data, conn_info);
+	web_cmd_proc(&net_data, conn_info);
 
 }
 
-//////////////////////////////////////////////////////////////////////////
-///
-///     web 模块处理客户端连接
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010－04－24
-//////////////////////////////////////////////////////////////////////////
+
+/*APP TCP SERVER For HTTP client with boa & cgi*/
 void web_process(void)
 {
-    int i;
-    //int flag = 0;
-    int addr_size = 0;
-    int res = 0;
-    int client_sock = -1;
-    struct timeval tv;
-    struct sockaddr_in client_addr;
-    static int m_max_i = 0;         //! max client connection number
-    static fd_set m_readfds;        //! set of read socket handles
-   // int sendlen;
+	int i;
+	//int flag = 0;
+	int addr_size = 0;
+	int res = 0;
+	int client_sock = -1;
+	struct timeval tv;
+	struct sockaddr_in client_addr;
+	static int m_max_i = 0;         //! max client connection number
+	static fd_set m_readfds;        //! set of read socket handles
+	// int sendlen;
 
 
-    FD_ZERO(&m_readfds);
+	FD_ZERO(&m_readfds);
 
-    if (g_listen_conn > 0)
-    {
-        FD_SET(g_listen_conn, &m_readfds);
-    }
+	if (g_listen_conn > 0){
+		FD_SET(g_listen_conn, &m_readfds);
+	}
 
-    for ( i = 0; i < MAX_TCP_CONN; i++)
-    {
-        if (g_client_conn[i].client_conn < 0)
-        {
-            continue;
-        }
+	for ( i = 0; i < MAX_TCP_CONN; i++)
+	{
+		if (g_client_conn[i].client_conn < 0)
+		{
+			continue;
+		}
 
-        FD_SET(g_client_conn[i].client_conn, &m_readfds);
-    }
+		FD_SET(g_client_conn[i].client_conn, &m_readfds);
+	}
 
-    tv.tv_sec = 0;
-    tv.tv_usec = 10000;
+	tv.tv_sec = 0;
+	tv.tv_usec = 10000;
+	res =-1;
+	sys_log(FUNC,  LOG_DBG,  "selecting\n");
+	res = select(m_max_sock + 1, &m_readfds, NULL, NULL, NULL);
+	sys_log(FUNC,  LOG_DBG,  "[m_max_sock %d]select %d\n",m_max_sock, res);
+	if (res == 0)
+	{
+		return;
+	}
+	else if (res < 0)
+	{
+		if (errno == EINTR)
+		{
+			return;
+		}
 
-    res = select(m_max_sock + 1, &m_readfds, NULL, NULL, NULL);
+		perror("web_process: select");
 
-    if (res == 0)
-    {
-        return;
-    }
-    else if (res < 0)
-    {
-        if (errno == EINTR)
-        {
-            return;
-        }
+		//Close all client connections
+		for (i = 0; i < MAX_TCP_CONN; i++)
+		{
+			if (g_client_conn[i].client_conn > 0)
+			{
+				net_conn_close(&g_client_conn[i]);
+			}
+		}
 
-        perror("web_process: select");
+		return;
+	}
+	else if (res > 0)
+	{
+		if (FD_ISSET(g_listen_conn, &m_readfds))
+		{
+			addr_size = sizeof(client_addr);
+			sys_log(FUNC, LOG_DBG, "[sock_fd %d]accepting...\n",g_listen_conn);
+			client_sock = accept(g_listen_conn, (struct sockaddr *)&client_addr, (socklen_t*)&addr_size);
+			sys_log(FUNC, LOG_DBG, "[sock_fd %d]accepted %s\n", g_listen_conn,inet_ntoa(client_addr.sin_addr));
 
-        //Close all client connections
-        for (i = 0; i < MAX_TCP_CONN; i++)
-        {
-            if (g_client_conn[i].client_conn > 0)
-            {
-                net_conn_close(&g_client_conn[i]);
-            }
-        }
-
-        return;
-    }
-    else if (res > 0)
-    {
-        if (FD_ISSET(g_listen_conn, &m_readfds))
-        {
-            addr_size = sizeof(client_addr);
-            client_sock = accept(g_listen_conn, (struct sockaddr *)&client_addr, (socklen_t*)&addr_size);
-            sys_log(FUNC, LOG_MSG, "++++++++++++++++++++ New Connection Coming from %s.++++++++++++++++++++\n", inet_ntoa(client_addr.sin_addr));
-
-            if (client_sock > 0)
-            {
-                for (i = 0; i < MAX_TCP_CONN; i++)
-                {
-                    if (g_client_conn[i].client_conn < 0)
-                    {
-                        g_client_conn[i].conn_idx = i;
-                        g_client_conn[i].client_conn = client_sock;
-                        g_client_conn[i].idle = 0;
-                        strcpy(g_client_conn[i].clientip, inet_ntoa(client_addr.sin_addr));
+			if (client_sock > 0)
+			{
+				for (i = 0; i < MAX_TCP_CONN; i++)
+				{
+					if (g_client_conn[i].client_conn < 0)
+					{
+						g_client_conn[i].conn_idx = i;
+						g_client_conn[i].client_conn = client_sock;
+						g_client_conn[i].idle = 0;
+						strcpy(g_client_conn[i].clientip, inet_ntoa(client_addr.sin_addr));
 
 
-                        if (i > m_max_i)
-                        {
-                            m_max_i = i;
-                        }
+						if (i > m_max_i)
+						{
+							m_max_i = i;
+						}
 
-                        break;
-                    }
-                }
+						break;
+					}
+				}
 
-                if (i == MAX_TCP_CONN)
-                {
-                    close(client_sock);
-                    client_sock = -1;
-                }
-            }
+				if (i == MAX_TCP_CONN)
+				{
+					close(client_sock);
+					sys_log(FUNC, LOG_WARN, "[sock_fd %d] close", client_sock);
+					
+					client_sock = -1;
+				}
+			}
 
-            if (client_sock > m_max_sock)
-            {
-                m_max_sock = client_sock;
-            }
-        }
+			if (client_sock > m_max_sock)
+			{
+				m_max_sock = client_sock;
+			}
+		}
 
-        for (i = 0; i <= m_max_i; i++)
-        {
-            if (g_client_conn[i].client_conn < 0)
-            {
-                continue;
-            }
+		for (i = 0; i <= m_max_i; i++)
+		{
+			if (g_client_conn[i].client_conn < 0)
+			{
+				continue;
+			}
 
-            if (FD_ISSET(g_client_conn[i].client_conn, &m_readfds))
-            {
-                g_client_conn[i].idle = 0;
-                web_svr_proc(&g_client_conn[i]);
-            }
-        }
-    }
+			if (FD_ISSET(g_client_conn[i].client_conn, &m_readfds))
+			{
+				g_client_conn[i].idle = 0;
+				web_svr_proc(&g_client_conn[i]);
+				//sys_log(FUNC, LOG_TRACE, "[sock_fd %d]  game over", g_client_conn[i].client_conn);
+			}
+		}
+	}
 }
 
 

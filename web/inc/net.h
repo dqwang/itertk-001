@@ -28,12 +28,12 @@
 ///Net Connection information
 typedef struct tagNET_CONN_INFO
 {
-    int conn_idx;		            //!< Index of connection
-    int client_conn;	            //!< client socket descriptor
-    BYTE client_type;	            //!< client type
-    BYTE file_type;		            //!< file type, 0 - picture, 1 - video, 2 -- break-point continue
-    BYTE idle;	            		//!< idle time count
-    char clientip[16];
+	int conn_idx;		            //!< Index of connection
+	int client_conn;	            //!< client socket descriptor
+	BYTE client_type;	            //!< client type
+	BYTE file_type;		            //!< file type, 0 - picture, 1 - video, 2 -- break-point continue
+	BYTE idle;	            		//!< idle time count
+	char clientip[16];
 
 } NET_CONN_INFO, *pNET_CONN_INFO;
 //////////////////////////////////////////////////////////////////////////

@@ -32,17 +32,16 @@
 //////////////////////////////////////////////////////////////////////////
 inline void itsip_pack(BYTE cmd, WORD extlen, BYTE dev_t, void *data, ITSIP_PACKET *its_pkt)
 {
-    its_pkt->head.itsip_head = ITS_HEAD;
-    its_pkt->head.itsip_cmd = cmd;
-    its_pkt->head.itsip_ver = ITSIP_VERSION;
-    its_pkt->head.itsip_thl = ITSIP_THLEN;
-    its_pkt->head.itsip_extlen = extlen;
+	its_pkt->head.itsip_head = ITS_HEAD;
+	its_pkt->head.itsip_cmd = cmd;
+	its_pkt->head.itsip_ver = ITSIP_VERSION;
+	its_pkt->head.itsip_thl = ITSIP_THLEN;
+	its_pkt->head.itsip_extlen = extlen;
 
-    its_pkt->head.itsip_dev_t = dev_t;
+	its_pkt->head.itsip_dev_t = dev_t;
 
-    if (extlen > 0 && data != NULL)
-    {
-        memcpy(its_pkt->data, data, extlen);
-    }
+	if (extlen > 0 && data != NULL)
+		memcpy(its_pkt->data, data, extlen);
+	
 }
 

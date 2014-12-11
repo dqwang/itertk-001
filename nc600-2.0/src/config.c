@@ -29,7 +29,8 @@ void config_makedefault ( CONFI_DATA *pConf )
     pConf->con_net.dev_gw = sys_str2ip ( "192.168.1.1" );
     pConf->con_net.dev_dhcp = OFF;
     pConf->con_net.dhcp_id = 0;
-    pConf->con_net.dns[0] = pConf->con_net.dns[1] = 0;
+    pConf->con_net.dns[0] = sys_str2ip("192.168.1.1");
+    pConf->con_net.dns[1] = 0;
 
 
     //串口参数
@@ -97,25 +98,26 @@ void config_makedefault ( CONFI_DATA *pConf )
     strcpy((char*)pConf->con_usr[0].usr_passwd, crypt("123456", USR_SALT));
     pConf->con_usr[0].usr_auth = USR_ROOT;
 
-    
- 
+    pConf->con_server.server_ip = sys_str2ip ( SERVER_IP );
+    pConf->con_server.server_port = SERVER_PORT;    
+  
     config_save ( pConf );
 }
 
 void config_load ( CONFI_DATA *pConf )
 {
-    FILE *fp = sys_file_open ( CONFIG_FILE, MODE_READ_T );
-    if ( fp == NULL )
-    {
-        sys_log ( FUNC, LOG_ERR, "日志文件打开失败！" );
-        return;
-    }
+	FILE *fp = sys_file_open ( CONFIG_FILE, MODE_READ_T );
+	if ( fp == NULL )
+	{
+		sys_log ( FUNC, LOG_ERR, "No configuration %s", CONFIG_FILE );
+		return;
+	}
 
-    if ( sys_file_read ( fp, pConf, sizeof ( CONFI_DATA ) ) != sizeof ( CONFI_DATA ) )
-    {
-        sys_log ( FUNC, LOG_ERR, "日志文件读出失败！" );
-    }
-    sys_file_close ( fp );
+	if ( sys_file_read ( fp, pConf, sizeof ( CONFI_DATA ) ) != sizeof ( CONFI_DATA ) )
+	{
+		sys_log ( FUNC, LOG_ERR, "read %s",CONFIG_FILE );
+	}
+	sys_file_close ( fp );
 }
 
 
@@ -129,13 +131,13 @@ void config_net_set(CONFIG_NET *pConf)
 	
 	sprintf(cmd, "ifconfig eth0 %s netmask %s", ip, nm);
 
-	sys_log(FUNC, LOG_MSG, "cmd1 is [%s]", cmd);
+	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
 
 	sprintf(cmd, "ifconfig eth0 hw ether %02x:%02x:%02x:%02x:%02x:%02x",\
 			 pConf->dev_mac[0], pConf->dev_mac[1], pConf->dev_mac[2],\
 		 	pConf->dev_mac[3],  pConf->dev_mac[4], pConf->dev_mac[5]);
-	sys_log(FUNC, LOG_MSG, "cmd2 is [%s]", cmd);
+	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
 	
 
@@ -160,29 +162,32 @@ void config_net_set(CONFIG_NET *pConf)
 void config_init ( void )
 {
 	if ( file_is_existed ( CONFIG_FILE ) == 0 )	{
-		sys_log(FUNC, LOG_WARN, "配置文件不存在，生成默认配置！");
+		sys_log(FUNC, LOG_WARN, "Generate default configuration");
 		config_makedefault ( &g_conf_info );
 	} else {
+		sys_log(FUNC, LOG_WARN, "Load configuration %s", CONFIG_FILE);
 		config_load ( &g_conf_info );
 	}
 	config_net_set(&g_conf_info.con_net);
-	get_mac();
+	//get_mac();
 }
 
 void config_save ( CONFI_DATA *pConf )
 {
-    FILE *fp = sys_file_open ( CONFIG_FILE, MODE_WRITE_T );
-    if ( fp == NULL )
-    {
-        sys_log ( FUNC, LOG_ERR, "日志文件打开失败！" );
-        return;
-    }
+	FILE *fp = sys_file_open ( CONFIG_FILE, MODE_WRITE_T );
+	if ( fp == NULL )
+	{
+		sys_log ( FUNC, LOG_ERR, "open %s failed", CONFIG_FILE );
+		return;
+	}
 
-    if ( sys_file_write ( fp, pConf, sizeof ( CONFI_DATA ) ) != SUCCESS )
-    {
-        sys_log ( FUNC, LOG_ERR, "日志文件写入失败！" );
-    }
-    sys_file_close ( fp );
+	if ( sys_file_write ( fp, pConf, sizeof ( CONFI_DATA ) ) != SUCCESS )
+	{
+		sys_log ( FUNC, LOG_ERR, "write %s failed", CONFIG_FILE );
+	}
+
+	sys_log(FUNC, LOG_MSG, "save configuration : %s", CONFIG_FILE);
+	sys_file_close ( fp );
 }
 
 USR_INFO* get_usr_info(BYTE *name)

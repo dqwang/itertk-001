@@ -1,21 +1,3 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright (c) 2010, 浙江共创技术有限公司
-///    All rights reserved.
-///
-/// @file   def.h
-/// @brief  类型重定义
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010－04－24
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////#include <stdio.h>
-
 #ifndef __DEF_H__
 #define __DEF_H__
 

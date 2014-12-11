@@ -30,11 +30,7 @@
 #define MAX_COM_PORT    16
 #define MAX_SESSION     6
 #define MAX_USR_NUM     16
-/**    本类的功能：打印错误信息
-*
-*     本类是一个单件
-*     在程序中需要进行错误信息打印的地方
-*/
+
 typedef struct tagCONFIG_SYS
 {
     char  host_name[32];
@@ -84,6 +80,14 @@ typedef struct tagCONFIG_GPIO
 {
     int alarm[2];
 }CONFIG_GPIO;
+
+typedef struct tagCONFIG_SERVER
+{
+	DWORD server_ip;/*server ip  / dns name*/	
+	WORD server_port;
+
+}CONFIG_SERVER;
+#define SERVER_PORT	8888
 
 typedef struct tagCONFIG_SESSION
 {

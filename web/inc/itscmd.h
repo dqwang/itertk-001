@@ -213,5 +213,12 @@ CMD_CODE its_conf_mode_set(char* name, CONFIG_MODE* con_mode);
 //////////////////////////////////////////////////////////////////////////
 CMD_CODE its_conf_lim_set(char* name, CONFIG_LIMIT* con_lim);
 
+CMD_CODE its_conf_server_query(char* name, CONFIG_SERVER* con_server);
+CMD_CODE its_conf_server_set(char* name, CONFIG_SERVER* con_server);
+
+CMD_CODE its_dns(char *www , unsigned int dns, char *ip);
+
+
+
 #endif
 
