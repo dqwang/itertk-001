@@ -205,7 +205,7 @@ int client_init(void)
 	
 	ret = connect(g_sockfd_client,(const struct sockaddr *)&addr, sizeof(addr));
 
-	sys_log(FUNC, LOG_WARN, "ip:%08x port: %d, ret=%d", g_conf_info.con_server.server_ip, g_conf_info.con_server.server_port, ret);
+	//sys_log(FUNC, LOG_WARN, "ip:%08x port: %d, ret=%d", g_conf_info.con_server.server_ip, g_conf_info.con_server.server_port, ret);
 	
 	if (ret < 0){
 		g_reconnect_flag = RECONNECT_ON;
@@ -260,7 +260,7 @@ void client_process(void)
 
 				
 		heartbeat_timeout ++;
-		sys_log(FUNC, LOG_ERR, "%d %d",heartbeat_timeout, heartbeat_s);
+		sys_log(FUNC, LOG_DBG, "heartbeat_timeout = %d heartbeat_s=%d",heartbeat_timeout, heartbeat_s);
 		if (heartbeat_timeout > heartbeat_s){
 			sys_log(FUNC, LOG_ERR, "heartbeat timeout   --> reconnect");
 			set_heartbeat(HEARTBEAT_OFFLINE,  HEARTBEAT_TIMEOUT);

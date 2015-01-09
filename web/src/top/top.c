@@ -53,7 +53,7 @@ int cgiMain()
 	
 	fprintf(cgiOut, "<table width=\"100%%\" height=\"64\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"admin_topbg\">\n");
 	fprintf(cgiOut, "  <tr>\n");
-	fprintf(cgiOut, "    <td width=\"61%%\" height=\"64\"><img src=\"../images/logo.gif\" width=\"262\" height=\"64\"></td>\n");
+	//fprintf(cgiOut, "    <td width=\"61%%\" height=\"64\"><img src=\"../images/logo.gif\" width=\"262\" height=\"64\"></td>\n");
 	fprintf(cgiOut, "    <td width=\"39%%\" valign=\"top\"><table width=\"100%%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n");
 	fprintf(cgiOut, "      <tr>\n");
 	fprintf(cgiOut, "        <td width=\"74%%\" height=\"38\" class=\"admin_txt\"><b> %s </b> 您好,感谢登陆使用！</td>\n", name);

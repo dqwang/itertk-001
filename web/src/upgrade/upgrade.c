@@ -37,11 +37,8 @@ int session_read(char* name)
 
 char name[32] = "";
 
-extern mtd_info_t meminfo;
-extern int mtdinfo_read(char* dev);
-extern int non_region_erase(char * dev, int start, int count);
-extern int mtd_write(char* dev, char* file);
 
+#define UPDATE_FILE_LEN_MAX (8*1024*1024)
 int writeFile(char* file)
 {
 	cgiFilePtr pfile;
@@ -49,13 +46,25 @@ int writeFile(char* file)
 	char buffer[1024]="";
 	int size, got;
 
+	
+
 	if(cgiFormFileName("upfile", name, sizeof(name)) != cgiFormSuccess)
 	{
 		printf("<p>No file was uploaded.<p>\n");
 		return -1;
 	}
 
+	if (strcmp(name, "nand1-2.tar.gz") != 0   ){
+		return -1;
+	}
+	
+	
 	cgiFormFileSize("upfile", &size);
+
+	if (size > UPDATE_FILE_LEN_MAX){
+		return -1;
+	}
+	
 
 	if(cgiFormFileOpen("upfile", &pfile) != cgiFormSuccess)
 	{
@@ -64,11 +73,13 @@ int writeFile(char* file)
 	}
 
 	int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC);
+	
 	while(cgiFormFileRead(pfile, buffer, sizeof(buffer), &got) == cgiFormSuccess)
 	{
 		if(size < sizeof(buffer))
 		{
 			write(fd, buffer, (size));
+			break;	
 		}
 		else
 		{
@@ -78,6 +89,11 @@ int writeFile(char* file)
 	}
 
 	close(fd);
+
+	return 0;
+
+#if 0
+
 	cgiFormFileClose(pfile);
 	if(access("/tmp/NC616.bin", F_OK) == 0)
 	{
@@ -94,6 +110,8 @@ int writeFile(char* file)
 		return -1;
 	}
 
+
+
 	int ret = mtdinfo_read("/dev/mtd1");
 	if(ret < 0)
 	{
@@ -108,7 +126,7 @@ int writeFile(char* file)
 	
 	return mtd_write("/dev/mtd1", "/tmp/NC616.bin");
 
-	
+#endif	
 	
 }
 
@@ -153,25 +171,36 @@ int cgiMain()
 
 	if(cgiFormSubmitClicked("upgrade") == cgiFormSuccess)
 	{
-		fprintf(cgiOut, "<script type=\"text/javascript\">\n");
-		fprintf(cgiOut, "window.alert(\"即将开始升级，升级完将自动重启系统\");\n");
-		fprintf(cgiOut, "</script>\n");
-
 		showmain(0);
-		ret = writeFile("/tmp/image.tmp");
+		
+		
+		//fprintf(cgiOut, "<script type=\"text/javascript\">\n");
+		//fprintf(cgiOut, "window.alert(\"开始升级，升级完将自动重启系统\");\n");
+		//fprintf(cgiOut, "</script>\n");
+		
+		
+		ret = writeFile("/mnt/nand1-2/update.tar.gz");
 		if(ret == 0)
 		{
-			//signal(SIGALRM, handler);
-			//alarm(1);
-			system("/sbin/reboot -d 10 &");
+			
+			system("/sbin/reboot -d 30 &");
+			system("/bin/tar -xzf  /mnt/nand1-2/update.tar.gz  -C /mnt/nand1-2/ &");
+			
+			
+			
+			//system("rm -f /mnt/nand1-2/update.tar.gz");
+			
 			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
-			fprintf(cgiOut, "window.setTimeout(function(){top.window.location.href=\"../login.html\"},000)\n");
-		//	fprintf(cgiOut, "window.alert(\"升级成功，请重启系统\");\n");
-		//	fprintf(cgiOut, "top.window.location.href=\"../login.html\";\n");
+			//fprintf(cgiOut, "window.setTimeout(function(){top.window.location.href=\"../login.html\"},000)\n");
+			fprintf(cgiOut, "window.alert(\"升级成功，请重启系统\");\n");
+			fprintf(cgiOut, "top.window.location.href=\"../login.html\";\n");
+			
+		
 			fprintf(cgiOut, "</script>\n");
 			fprintf(cgiOut, "</body>\n");
-			sleep(5);
-			return 1;
+			
+						
+			//return 1;
 		}
 		else
 		{

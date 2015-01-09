@@ -24,6 +24,7 @@ int session_read(char* name)
 	close(fd);
 	return ret;
 }
+#if 0
 void show_alarm(int num)
 {
 	int sbit[] = {
@@ -42,6 +43,29 @@ void show_alarm(int num)
 	}
 	fprintf(cgiOut, "                    </select>\n");
 }
+#else
+void show_alarm(int num)
+{	
+	int sbit[] = {
+		0,
+		1
+	};
+	
+	int i;
+	
+	for(i = 0; i < sizeof(sbit)/sizeof(sbit[0]); i++)
+	{
+		if(sbit[i] == con_gpio.alarm[num-1])
+			fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"alarm\"  type=\"text\" value=\"%d\" size=\"30\" readonly=\"true\"/></td>\n",sbit[i]);
+		
+	}
+	
+
+	
+	
+}
+
+#endif
 
 int cgiMain()
 {
@@ -148,7 +172,7 @@ int cgiMain()
 	fprintf(cgiOut, "                <tr>\n");
 	fprintf(cgiOut, "                  <td width=\"20%%\" height=\"30\" align=\"right\" bgcolor=\"#f2f2f2\" class=\"left_txt2\">Alarm1£º</td>\n");
 	fprintf(cgiOut, "                  <td width=\"3%%\" bgcolor=\"#f2f2f2\">&nbsp;</td>\n");
-	fprintf(cgiOut, "                  <td width=\"32%%\" height=\"30\" bgcolor=\"#f2f2f2\"><label>\n");
+	fprintf(cgiOut, "                  <td width=\"3%%\" height=\"30\" bgcolor=\"#f2f2f2\"><label>\n");
 	show_alarm(1);
 	fprintf(cgiOut, "                    </label></td>\n");
 	fprintf(cgiOut, "                </tr>\n");
@@ -157,8 +181,6 @@ int cgiMain()
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
 	show_alarm(2);
-	
-	
 	
 	fprintf(cgiOut, "</body>\n");
 }
