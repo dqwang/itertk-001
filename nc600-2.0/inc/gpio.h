@@ -1,13 +1,19 @@
 #ifndef _GPIO_H_
 #define _GPIO_H_
-
+#include "def.h"
 typedef enum GPIO_NUM{
-	ALARM_O = 99,//GPD3
-	//ALARM_TTLIN1 = 163,//GPG3
-	//ALARM_TTLIN2 = 162//GPG2
+	ALARM_IN1 =64, //GPC0
+	ALARM_IN2 =38,//GPB6
+	ALARM_IN3 =37, //GPB5
+	ALARM_IN4 =65,//GPC1
+	ALARM_IN5= 66,//GPC2
+	ALARM_IN6=67,//GPC3
+	ALARM_IN7=68, //GPC4
+	ALARM_IN8=69, //GPC5
 
-	ALARM_TTLIN1 = 38,//GPB6
-	ALARM_TTLIN2 = 37,//GPB5
+	LED_D1_SYSTEM_STATUS=36,//GPB4
+	LED_D2_ALARM_STATUS=35,//GPB3
+	LED_D3_ALARM_SERVER_STATUS=34,//GPB2
 
 	PHY_RESET =167 //GPG7
 
@@ -24,11 +30,37 @@ typedef enum GPIO_DIRECTION{
 }gpio_dir;
 
 
+
 int set_gpio(gpio_num gn, gpio_dir gd, gpio_status gs);
 int get_gpio(gpio_num gn, gpio_status *gsP);
 int init_gpio(void);
+void get_alarm(u8 alarm_in[]);
 
+
+#define LED_ON GS_LOW
+#define LED_OFF GS_HIGH
+void led_ctrl(gpio_num led, unsigned char on_off);
+
+#define ALARM_ON GS_LOW
+#define ALARM_OFF GS_HIGH
+
+#define ALARM_LED_FLAG_ON 1
+#define ALARM_LED_FLAG_OFF 0
+
+enum {
+	ALARM_SUFFIX0 = 0,
+	ALARM_SUFFIX1,
+	ALARM_SUFFIX2,
+	ALARM_SUFFIX3,
+	ALARM_SUFFIX4,
+	ALARM_SUFFIX5,
+	ALARM_SUFFIX6,
+	ALARM_SUFFIX7,
+
+	ALARM_MAX = 8
 	
+};
+
 
 
 #endif/*_GPIO_H_*/

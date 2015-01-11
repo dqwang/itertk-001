@@ -384,11 +384,24 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
   case CONF_GPIO:
 	{
 	  	CONFIG_GPIO mygpio;
-		gpio_status alarm1, alarm2;
-		get_gpio(ALARM_TTLIN1,&alarm1);
-		mygpio.alarm[0] = alarm1;
-		get_gpio(ALARM_TTLIN2,&alarm2);
-		mygpio.alarm[1] = alarm2;
+		gpio_status alarm;
+		get_gpio(ALARM_IN1,&alarm);
+		mygpio.alarm[0] = alarm;
+		get_gpio(ALARM_IN2,&alarm);
+		mygpio.alarm[1] = alarm;		
+		get_gpio(ALARM_IN3,&alarm);
+		mygpio.alarm[2] = alarm;
+		get_gpio(ALARM_IN4,&alarm);
+		mygpio.alarm[3] = alarm;
+		get_gpio(ALARM_IN5,&alarm);
+		mygpio.alarm[4] = alarm;
+		get_gpio(ALARM_IN6,&alarm);
+		mygpio.alarm[5] = alarm;
+		get_gpio(ALARM_IN7,&alarm);
+		mygpio.alarm[6] = alarm;
+		get_gpio(ALARM_IN8,&alarm);
+		mygpio.alarm[7] = alarm;
+		
 		itsip_pack(ITS_ACK_CONF_QUERY, sizeof(CONFIG_GPIO), 0, NULL, &its_ack_pak);
 		
 		its_ack_pak.head.itsip_data[0] = 0;
@@ -933,8 +946,8 @@ void web_process(void)
 
 			if (FD_ISSET(g_client_conn[i].client_conn, &m_readfds))
 			{
-				g_client_conn[i].idle = 0;
-				web_svr_proc(&g_client_conn[i]);
+				g_client_conn[i].idle = 0;				
+				web_svr_proc(&g_client_conn[i]);				
 				//sys_log(FUNC, LOG_TRACE, "[sock_fd %d]  game over", g_client_conn[i].client_conn);
 			}
 		}

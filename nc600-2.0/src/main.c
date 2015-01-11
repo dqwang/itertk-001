@@ -22,11 +22,11 @@ int main ( int argc, char **argv )
 	client_init();
 	client_thread();
 
+	led_ctrl(LED_D1_SYSTEM_STATUS, LED_ON);
+	
 	while(1)
-	{
-		
-		web_process();
-		
+	{		
+		web_process();		
 	}
 	return 0;
 }
