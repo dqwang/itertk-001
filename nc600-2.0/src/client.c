@@ -5,8 +5,8 @@
 #include "thread.h"
 #include "gpio.h"
 #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 
 u8 heartbeat_s =HEARTBEAT_TIMEOUT;
@@ -16,6 +16,7 @@ u8 heartbeat_timeout = 0;
 
 int g_sockfd_client = -1;
 int g_reconnect_flag = RECONNECT_OFF;
+int g_sockfd_client_status = SOCKFD_CLIENT_NULL;
 
 char buf[1024*1024*2];
 u8 buf_send[1024];
@@ -234,14 +235,17 @@ case 2: server offline(No heartbeat)
 int client_reconnect(void)
 {
 	if (g_sockfd_client > 0){
+		g_sockfd_client_status = SOCKFD_CLIENT_NULL;
 		close(g_sockfd_client);
-		g_sockfd_client = -1;
+		g_sockfd_client = -1;		
 	}
 	led_ctrl(LED_D3_ALARM_SERVER_STATUS, LED_OFF);
 	while (FAILURE == client_init()){
 		if (g_sockfd_client > 0){
+			g_sockfd_client_status = SOCKFD_CLIENT_NULL;
 			close(g_sockfd_client);
 			g_sockfd_client = -1;
+			
 		}		
 		sleep(CLIENT_RECONNECT_TIMEOUT);
 	}	
@@ -306,6 +310,8 @@ void client_process(void)
 		if (check_head(buf) == -1 ){
 			continue;
 		}		
+
+		g_sockfd_client_status = SOCKFD_CLIENT_OK;
 		
 		switch (buf[2]){
 			case PROTOCOL_GET_DEVICE_ATTR:

@@ -35,6 +35,9 @@ enum protocol{
 #define HEARTBEAT_OFFLINE 2
 #define HEARTBEAT_ONLINE 3
 
+#define SOCKFD_CLIENT_OK 1
+#define SOCKFD_CLIENT_NULL 0
+
 
 
 int client_init(void);

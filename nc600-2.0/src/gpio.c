@@ -5,6 +5,7 @@
 #include "gpio.h"
 #include "thread.h"
 #include "def.h"
+#include "client.h"
 
 u8 g_alarm_led_flag = ALARM_LED_FLAG_OFF;
 pthread_mutex_t gpio_mutex;
@@ -155,17 +156,21 @@ u8 is_alarm(u8 alarm_in[])
 }
 
 extern int g_sockfd_client;
+extern int g_sockfd_client_status;
 extern u8 buf_send[1024];
 extern int make_ack_get_alarm_status(u8 * _buf, u8 alarm_in[]);
+
 void alarm_proc(void)
 {
 	u8 alarm_in[ALARM_MAX];
 	u8 num_to_send=0;	
 	while (1)
 	{
-		if (ALARM_ON == is_alarm(alarm_in)){
-			num_to_send = make_ack_get_alarm_status(buf_send, alarm_in);
-			write(g_sockfd_client, buf_send, num_to_send);
+		if (ALARM_ON == is_alarm(alarm_in)){			
+			if (SOCKFD_CLIENT_OK == g_sockfd_client_status){
+				write(g_sockfd_client, buf_send, num_to_send);
+				num_to_send = make_ack_get_alarm_status(buf_send, alarm_in);
+			}
 		}		
 		usleep(100*1000);
 	}

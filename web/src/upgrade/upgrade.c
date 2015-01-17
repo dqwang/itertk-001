@@ -188,7 +188,7 @@ int cgiMain()
 			
 			
 			
-			//system("rm -f /mnt/nand1-2/update.tar.gz");
+			system("rm -f /mnt/nand1-2/update.tar.gz");
 			
 			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
 			//fprintf(cgiOut, "window.setTimeout(function(){top.window.location.href=\"../login.html\"},000)\n");
