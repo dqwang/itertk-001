@@ -721,6 +721,7 @@ static void web_cmd_proc(ITSIP *p_net_head, NET_CONN_INFO *conn_info)
 			
 			case ITS_SYSINFO_QUERY:{
 				sys_log(FUNC, LOG_MSG, "+++ITS_SYSINFO_QUERY+++");
+				sprintf(g_conf_info.con_sys.sw_ver, "%s", PROGRAM_VERSION);
 				itsip_pack(ITS_ACK_SYSINFO_QUERY, sizeof(g_conf_info.con_sys), 0, NULL, &its_ack_pak);
 				net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_sys, sizeof(g_conf_info.con_sys));
 			}break;

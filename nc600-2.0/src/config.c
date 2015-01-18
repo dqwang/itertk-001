@@ -6,6 +6,7 @@
 #include "mode.h"
 #include "log.h"
 #include "cmd_def.h"
+#include "system.h"
 
 CONFI_DATA g_conf_info;
 void get_mac(void);

@@ -5,7 +5,7 @@
 
 
 #define PRODUCT_NAME    "itertk_sensor"
-#define PROGRAM_VERSION "v1.1"
+#define PROGRAM_VERSION "v1.01"
 
 extern  void sys_version_show ( FILE * stream );
 extern  DWORD sys_str2ip(char *str);
