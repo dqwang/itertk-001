@@ -24,7 +24,6 @@ $(OBJ)%.o: $(SRC)%.c $(INC)*.h
 default:	$(OBJS)
 	$(GCC) -O0 -o $(EXEC) $(OBJS) -lpthread -lcrypt --static
 	cp $(EXEC) /home/jack/n32926/bsp/tftp
-	cp $(EXEC) /home/jack/n32926/bsp/tftp/image/bin/
 	cp $(EXEC) /home/jack/n32926/bsp/tftp/start/nand1-2/app/bin/
 clean:
 	rm -rf $(EXEC) 
