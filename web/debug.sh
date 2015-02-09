@@ -19,5 +19,5 @@ sleep 1
 
 echo "generate update.tar.gz"
 cd /home/jack/n32926/bsp/itertk-001/update
-./update.sh
+./update_app.sh
 
