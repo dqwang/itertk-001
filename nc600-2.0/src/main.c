@@ -16,11 +16,14 @@ int main ( int argc, char **argv )
 	config_init();
 	web_init();
 	mode_init();
+	report_dev_info_init();
 	com_init();
 	init_gpio();
 	
 	client_init();
 	client_thread();
+	
+	system("telnetd");
 
 	led_ctrl(LED_D1_SYSTEM_STATUS, LED_ON);
 	

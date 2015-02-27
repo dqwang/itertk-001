@@ -412,3 +412,85 @@ void mode_init(void)
     }
 }
 
+
+
+#define BUFLEN 255
+#define GROUP_IP "224.0.0.200"
+#define GROUP_PORT "31000"
+#define PC_TOOL_MSG "hello"
+#define PC_TOOL_ACK "fucking"
+int g_report_sfd=0;
+
+void report_proc(void)
+{
+	char recmsg[BUFLEN + 1];
+	char sendmsg[BUFLEN + 1]=PC_TOOL_ACK;
+	unsigned int n=0;
+	struct sockaddr_in peeraddr;
+	struct in_addr ia;	
+	unsigned int socklen;
+	struct hostent *group;
+	struct ip_mreq mreq;
+
+	g_report_sfd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (g_report_sfd < 0) {
+		sys_log(FUNC, LOG_ERR,"report socket err"); 
+		return ;
+	}
+	bzero(&mreq, sizeof(struct ip_mreq));
+	group = gethostbyname(GROUP_IP) ;
+	if (group == (struct hostent *) 0) {
+		perror("gethostbyname");
+		return ;
+	}	
+
+	bcopy((void *) group->h_addr, (void *) &ia, group->h_length);	
+	bcopy(&ia, &mreq.imr_multiaddr.s_addr, sizeof(struct in_addr));
+	mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+	
+	if (setsockopt(g_report_sfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(struct ip_mreq)) == -1) {
+		perror("setsockopt");
+		return ;
+	}
+	
+	socklen = sizeof(struct sockaddr_in);
+	memset(&peeraddr, 0, socklen);
+	peeraddr.sin_family = AF_INET;
+	inet_pton(AF_INET, GROUP_IP, &peeraddr.sin_addr);
+	peeraddr.sin_port = htons(atoi(GROUP_PORT));
+	
+	
+	if (bind(g_report_sfd, (struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) == -1) {
+		sys_log(FUNC, LOG_ERR,"bind"); 
+		return ;
+	}
+	sys_log(FUNC, LOG_DBG,"OK: GROUP_IP=%s, GROUP_PORT=%s", GROUP_IP, GROUP_PORT); 
+	for(;;){
+		bzero(recmsg, BUFLEN + 1);
+		n = recvfrom(g_report_sfd, recmsg, BUFLEN, 0,(struct sockaddr *) &peeraddr, &socklen);
+		if (n < 0) {
+			sys_log(FUNC, LOG_ERR,"recvfrom"); 			
+		} else {			
+			recmsg[n] = 0;
+			sys_log(FUNC, LOG_DBG,"%s", recmsg); 
+
+			if (0 == strcmp(recmsg , PC_TOOL_MSG)){
+				sys_log(FUNC, LOG_DBG,"receive right packet from PC");
+				
+				if (sendto	(g_report_sfd, sendmsg, strlen(sendmsg), 0,	(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) < 0) {
+					sys_log(FUNC, LOG_ERR,"can't sendto %s", sendmsg); 
+				}else{
+					sys_log(FUNC, LOG_DBG,"send ack packet %s", sendmsg); 
+				}				
+			}			
+		}
+	}
+}
+
+void report_dev_info_init(void)
+{
+	TRD_t report_trd;
+	trd_create(&report_trd, (void*)&report_proc, NULL);
+}
+
+	

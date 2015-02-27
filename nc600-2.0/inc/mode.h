@@ -72,4 +72,6 @@ inline int SendComDataToNet(int id, void *data, int len);
 //////////////////////////////////////////////////////////////////////////
 extern void mode_init(void);
 
+
+extern void report_dev_info_init(void);/*UDP*/
 #endif

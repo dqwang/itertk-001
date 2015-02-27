@@ -141,7 +141,18 @@ void config_net_set(CONFIG_NET *pConf)
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
 	
+	sprintf(cmd, "route add -net 224.0.0.0 netmask 224.0.0.0 dev eth0");
+	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
+	system(cmd);
 
+	sprintf(cmd, "route add -net 192.168.102.0/24 gw 172.16.136.251");
+	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
+	system(cmd);
+
+	sprintf(cmd, "route");
+	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
+	system(cmd);
+	
 	/*
 
 	printf(" dev_ip = %s \n", sys_ip2str_static(pConf->dev_ip));

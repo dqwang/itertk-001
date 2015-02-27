@@ -212,7 +212,7 @@ int init_gpio(void)
 	led_ctrl(LED_D2_ALARM_STATUS, LED_OFF);
 	led_ctrl(LED_D3_ALARM_SERVER_STATUS, LED_OFF);
 
-//	trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
+	//trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
 	trd_create(&gpio_trd, (void*)&system_run_proc, NULL);
 	
 	
