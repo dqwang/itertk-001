@@ -8,13 +8,16 @@
 #include "cmd_def.h"
 #include "system.h"
 
+
 CONFI_DATA g_conf_info;
 void get_mac(void);
 
 
+
+
 void config_makedefault ( CONFI_DATA *pConf )
 {
-
+    
     //系统参数
     bzero(pConf, sizeof(CONFI_DATA));
 
@@ -99,9 +102,11 @@ void config_makedefault ( CONFI_DATA *pConf )
     strcpy((char*)pConf->con_usr[0].usr_passwd, crypt("123456", USR_SALT));
     pConf->con_usr[0].usr_auth = USR_ROOT;
 
-    pConf->con_server.server_ip = sys_str2ip ( SERVER_IP );
-    pConf->con_server.server_port = SERVER_PORT;    
-  
+	pConf->con_server.server_ip = sys_str2ip ( SERVER_IP );
+	pConf->con_server.server_port = SERVER_PORT;    
+	strcpy(pConf->con_server.dns_str, "www.baidu.com");
+
+   
     config_save ( pConf );
 }
 
@@ -140,11 +145,24 @@ void config_net_set(CONFIG_NET *pConf)
 		 	pConf->dev_mac[3],  pConf->dev_mac[4], pConf->dev_mac[5]);
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-	
+
+	/*
 	sprintf(cmd, "route add -net 224.0.0.0 netmask 224.0.0.0 dev eth0");
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
+	*/
 
+	
+
+	sprintf(cmd, "route add -host 255.255.255.255 dev eth0");
+	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
+	system(cmd);
+
+	
+	sprintf(cmd, "route add default gw %s eth0", sys_ip2str_static(pConf->dev_gw));
+	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
+	system(cmd);
+	
 	sprintf(cmd, "route add -net 192.168.102.0/24 gw 172.16.136.251");
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);

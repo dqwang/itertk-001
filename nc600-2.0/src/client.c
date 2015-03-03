@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "cmd_def.h"
 
 
 u8 heartbeat_s =HEARTBEAT_TIMEOUT;
@@ -199,18 +200,188 @@ void set_heartbeat(int status, u8 time)
 	}
 	
 }
+
+#define DNS_ON
+#ifdef DNS_ON
+
+#define MAX_SIZE_DNS 1024
+#define SERVER_PORT_DNS 53
+
+void setHead(unsigned char *buf)
+{
+	buf[0] = 0x00;
+	buf[1] = 0;
+	buf[2] = 0x01;
+	buf[3] = 0;
+	buf[4] = 0;
+	buf[5] = 1;
+	buf[6] = 0;
+	buf[7] = 0;
+	buf[8] = buf[9] = buf[10] = buf[11] = 0;
+}
+
+void setQuery(char *name, unsigned char *buf, int len)
+{
+	int i;
+	//strcat(buf+12,name);
+	for(i=0;i<len;i++)
+		buf[12+i] = name[i];
+	int pos = len + 12;
+	
+	buf[pos] = 0;
+	buf[pos+1] = 1;
+	buf[pos+2] = 0;
+	buf[pos+3] = 1;
+}
+int changeDN(char *DN,char *name)
+{
+	int i = strlen(DN) - 1;
+	int j = i + 1;
+	int k;
+	
+	name[j+1] = 0;
+	for(k = 0; i >= 0; i--,j--) {
+		if(DN[i] == '.') {
+			name[j] = k;
+			k = 0;
+		}
+		else {
+			name[j] = DN[i];
+			k++;
+		}
+	}
+	name[0] = k;
+	return (strlen(DN) + 2);
+}
+void printName(int len, char *name)
+{
+	  int i;
+	  for(i = 0; i < len; i++) printf("%x.",name[i]);
+	  printf("\n");
+}
+
+int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_ip)
+{
+	int s;
+	struct sockaddr_in sin;
+
+	fd_set rfds;
+	struct timeval tv;
+	int retval;
+
+	memset(&sin,0,sizeof(sin));
+	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
+	sin.sin_addr.s_addr = dns_ip;
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(SERVER_PORT_DNS);
+
+	s = socket(PF_INET,SOCK_DGRAM,0);
+
+	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));	
+	
+	
+	   /* Watch stdin (fd 0) to see when it has input. */
+	   FD_ZERO(&rfds);
+	   FD_SET(0, &rfds);
+
+	   /* Wait up to 2 seconds. */
+	   tv.tv_sec = 2;
+	   tv.tv_usec = 0;
+	
+	   retval = select(s+1, &rfds, NULL, NULL, &tv);
+	   /* Don't rely on the value of tv now! */
+
+	   if (retval == -1)
+		   perror("select()");
+	   else if (retval)
+	   	sys_log(FUNC, LOG_WARN, " %s", "dns ok");
+		   
+		   /* FD_ISSET(0, &rfds) will be true. */
+	   else
+		   sys_log(FUNC, LOG_ERR, " %s", "dns failed");	
+	
+	
+	return recv(s,recvMsg,MAX_SIZE_DNS,0);
+
+}
+
+int resolve(unsigned char *recvMsg, int len, int len_recvMsg, char *ip)
+{
+	int pos = len;
+	int cnt = 12;
+
+	while(pos < len_recvMsg) {		
+		unsigned char now_pos = recvMsg[pos+1];
+		unsigned char retype = recvMsg[pos+3];
+		unsigned char reclass = recvMsg[pos+5];
+		unsigned char offset = recvMsg[pos+11];
+
+		if(retype == 1) {			
+			if(now_pos == cnt && reclass == 1) {
+				//printf("%d.%d.%d.%d\n",recvMsg[pos+12],recvMsg[pos+13],recvMsg[pos+14],recvMsg[pos+15]);
+
+				sprintf(ip, "%d.%d.%d.%d", recvMsg[pos+12],recvMsg[pos+13],recvMsg[pos+14],recvMsg[pos+15]);
+
+				return DNS_OK;
+			}
+		}
+		else if(retype == 5) {			
+			cnt = pos + 12 ;
+		}		
+		pos = pos + 12 + offset;
+	}
+
+	return -1;
+}
+
+
+CMD_CODE its_dns(char *www , unsigned int dns, char *ip)
+{	
+	unsigned char buf[MAX_SIZE_DNS]; /* socket发送的数据 */
+	char *DN=www; /* 将要解析的域名(www.xxx.xxx) */
+	char name[MAX_SIZE_DNS]; /* 转换为符合DNS报文格式的域名 */
+	char recvMsg[MAX_SIZE_DNS]; /* 接收的数据 */
+	int len; /* socket发送数据的长度 */
+	int len_recvMsg;
+	int ret =-1;
+
+	len = changeDN(DN,name);	
+	setHead(buf);
+	setQuery(name,buf,len);
+	len += 16;
+	len_recvMsg = sendDNSPacket(buf,len,recvMsg, dns);
+	
+	ret = resolve(recvMsg,len,len_recvMsg, ip);
+
+	return ret;
+}
+
+void dns_init(char * dns_str)
+{
+	char ip_dest[16]="";
+	
+	if (strlen(g_conf_info.con_server.dns_str) !=0 && its_dns(dns_str, g_conf_info.con_net.dns[0], ip_dest) == DNS_OK){
+		 g_conf_info.con_server.server_ip = sys_str2ip(ip_dest);
+	}
+
+	sys_log(FUNC, LOG_WARN, " %s", ip_dest);	
+	
+}
+
+#endif
 int client_init(void)
 {
 	struct sockaddr_in  addr;
 	struct in_addr in_ip;
 	int ret = -1;
 	
+	
 	g_sockfd_client =  socket( AF_INET, SOCK_STREAM, 0 );
 	if (g_sockfd_client < 0){
 		perror("socket");
 		return FAILURE;
 	}
-	memset(&addr , 0, sizeof(struct sockaddr_in ));
+	memset(&addr , 0, sizeof(struct sockaddr_in ));	
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = g_conf_info.con_server.server_ip;
 	addr.sin_port = htons(g_conf_info.con_server.server_port);	

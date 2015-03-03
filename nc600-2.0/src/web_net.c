@@ -782,7 +782,7 @@ static void web_cmd_proc(ITSIP *p_net_head, NET_CONN_INFO *conn_info)
 			}break;
 
 			case ITS_SERVER_QUERY:{
-				sys_log(FUNC, LOG_MSG, "---ITS_SERVER_QUERY---%s %d", \
+				sys_log(FUNC, LOG_MSG, "---ITS_SERVER_QUERY---%s %s %d", g_conf_info.con_server.dns_str,\
 					sys_ip2str_static(g_conf_info.con_server.server_ip), g_conf_info.con_server.server_port);
 						
 				itsip_pack(ITS_ACK_SERVER_QUERY, sizeof(g_conf_info.con_server), 0, NULL, &its_ack_pak);

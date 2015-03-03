@@ -44,6 +44,8 @@ int client_init(void);
 int client_reconnect(void);
 void client_process(void);
 void client_thread(void);
+void dns_init(char * dns_str);
+
 
 
 #endif/*_CLIENT_H_*/

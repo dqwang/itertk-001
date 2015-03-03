@@ -33,7 +33,9 @@
 #define MAX_USR_NUM     16
 
 #define SERVER_PORT	8888
-#define SERVER_IP "192.168.1.100"
+//#define SERVER_IP "192.168.1.100"
+#define SERVER_IP ""
+
 
 
 typedef struct tagCONFIG_SYS
@@ -130,15 +132,13 @@ typedef struct tagCONFIG_GPIO
     int alarm[8];
 }CONFIG_GPIO;
 
+#define DNS_STR_LEN 50
 typedef struct tagCONFIG_SERVER
 {
 	DWORD server_ip;/*server ip  / dns name*/	
 	WORD server_port;
-
+	char dns_str[DNS_STR_LEN];
 }CONFIG_SERVER;
-
-
-
 
 typedef struct tagCONFIG_DATA
 {

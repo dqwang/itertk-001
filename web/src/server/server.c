@@ -89,10 +89,13 @@ int ip_check(char * ip)
 
 void show_server_ip(void)
 {
-	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"server_ip\" type=\"text\" value=\"%s\" size=\"30\"/></td>\n", sys_ip2str_static(con_server.server_ip));
+	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"server_ip\" type=\"text\" value=\"%s\" size=\"30\" readonly=\"true\"/></td>\n", sys_ip2str_static(con_server.server_ip));
 }
 
-
+void show_server_name(void)
+{
+	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"dns_str\" type=\"text\" value=\"%s\" size=\"30\"/></td>\n", con_server.dns_str);	
+}
 void show_server_port(void)
 {
 	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"server_port\" type=\"text\" value=\"%d\" size=\"30\"/></td>\n", con_server.server_port);
@@ -187,13 +190,16 @@ int cgiMain()
 		ret_val = its_netinfo_query(name, &config_net);
 		
 		
-		get_server_ip("server_ip",ip_str);
+		//get_server_ip("server_ip",ip_str);
+		get_server_ip("dns_str",ip_str);
 
 		if (ip_check(ip_str) == TRUE){
 			h = gethostbyname(ip_str);	
 			con_server.server_ip = sys_str2ip(inet_ntoa(*((struct in_addr *)h->h_addr_list[0])));
+			strcpy(con_server.dns_str, ip_str);
 		}else if (its_dns(ip_str,config_net.dns[0], ip_dest) == DNS_OK){
 			con_server.server_ip= sys_str2ip( ip_dest );
+			strcpy(con_server.dns_str, ip_str);
 		}else{
 			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
 			fprintf(cgiOut, "window.alert(\"IP - 域名格式错误，请重新输入\");\n");
@@ -302,13 +308,21 @@ SHOW:
 
 	fprintf(cgiOut, "                </tr>\n");	
 	fprintf(cgiOut, "                <tr>\n");	
-	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">服务器IP或者域名</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">请输入服务器IP或者域名</td>\n");
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
-	show_server_ip();
+	show_server_name();
 
 	fprintf(cgiOut, "                </tr>\n");	
 	fprintf(cgiOut, "                <tr>\n");	
-	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">服务器端口号</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">解析服务器IP为</td>\n");
+	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
+	show_server_ip();
+
+	
+
+	fprintf(cgiOut, "                </tr>\n");	
+	fprintf(cgiOut, "                <tr>\n");	
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">请输入服务器端口号</td>\n");
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	show_server_port();
 	

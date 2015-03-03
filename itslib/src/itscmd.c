@@ -850,6 +850,10 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	int s;
 	struct sockaddr_in sin;
 
+	fd_set rfds;
+	struct timeval tv;
+	int retval;
+
 	memset(&sin,0,sizeof(sin));
 	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
 	sin.sin_addr.s_addr = dns_ip;
@@ -857,10 +861,55 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	sin.sin_port = htons(SERVER_PORT_DNS);
 
 	s = socket(PF_INET,SOCK_DGRAM,0);
+
+	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));	
+	
+	
+	   /* Watch stdin (fd 0) to see when it has input. */
+	   FD_ZERO(&rfds);
+	   FD_SET(0, &rfds);
+
+	   /* Wait up to 2 seconds. */
+	   tv.tv_sec = 2;
+	   tv.tv_usec = 0;
+	
+	   retval = select(s+1, &rfds, NULL, NULL, &tv);
+	   /* Don't rely on the value of tv now! */
+
+	   if (retval == -1){;}
+		   //perror("select()");
+	   else if (retval){;}
+		 //  printf("Data is available now.\n");
+		   /* FD_ISSET(0, &rfds) will be true. */
+	   else{;}
+		   //printf("No data within five seconds.\n");	
+	
+	
+	return recv(s,recvMsg,MAX_SIZE_DNS,0);
+
+}
+/*
+
+int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_ip)
+{
+	int s;
+	struct sockaddr_in sin;
+
+	memset(&sin,0,sizeof(sin));
+	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
+	sin.sin_addr.s_addr = dns_ip;
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(SERVER_PORT_DNS);
+
+	s = socket(PF_INET,SOCK_DGRAM,0);
+
+//	setsockopt
+	
 	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));
 	return recv(s,recvMsg,MAX_SIZE_DNS,0);
 
 }
+*/
 int resolve(unsigned char *recvMsg, int len, int len_recvMsg, char *ip)
 {
 	int pos = len;

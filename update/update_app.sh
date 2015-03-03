@@ -5,6 +5,12 @@ fi
 date > /home/jack/n32926/bsp/tftp/start/nand1-2/update_history
 
 cp /home/jack/n32926/bsp/tftp/start/nand1-2/app/bin/app /home/jack/n32926/bsp/tftp/update/nand1-2/app/bin/
+
+cp /home/jack/n32926/bsp/tftp/start/nand1-2/app/web/*.html  /home/jack/n32926/bsp/tftp/update/nand1-2/app/web/
+
+cp  /home/jack/n32926/bsp/tftp/start/nand1-2/app/web/cgi-bin/server.cgi /home/jack/n32926/bsp/tftp/update/nand1-2/app/web/cgi-bin/
+
+
 date > /home/jack/n32926/bsp/tftp/update/nand1-2/update_history
 #cd /home/jack/n32926/bsp/tftp/start/nand1-2
 cd /home/jack/n32926/bsp/tftp/update/nand1-2

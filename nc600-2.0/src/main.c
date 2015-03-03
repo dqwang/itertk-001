@@ -26,7 +26,9 @@ int main ( int argc, char **argv )
 	system("telnetd");
 
 	led_ctrl(LED_D1_SYSTEM_STATUS, LED_ON);
-	
+
+	dns_init(g_conf_info.con_server.dns_str);
+
 	while(1)
 	{		
 		web_process();		

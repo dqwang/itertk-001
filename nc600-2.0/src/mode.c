@@ -415,11 +415,125 @@ void mode_init(void)
 
 
 #define BUFLEN 255
-#define GROUP_IP "224.0.0.200"
+//#define GROUP_IP "224.0.0.200"
+
+#define GROUP_IP "255.255.255.255"
 #define GROUP_PORT "31000"
-#define PC_TOOL_MSG "hello"
-#define PC_TOOL_ACK "fucking"
+#define PC_TOOL_MSG1 "hello"
+//#define PC_TOOL_ACK "fucking"
+#define PC_TOOL_ACK "192.168.1.101|255.255.255.0|192.168.1.1|192.168.1.1|0.0.0.0|192.168.1.100|8888"
 int g_report_sfd=0;
+
+//DWORD sys_str2ip ( char *str )
+
+
+//char* sys_ip2str_static ( DWORD ip )
+
+extern void config_net_set(CONFIG_NET *pConf);
+extern void dns_init(char * dns_str);
+void pc_set_dev_info(char *recv_str)
+{
+	char* p = strtok(recv_str, "|");
+	CONFIG_NET conf_net;
+	CONFIG_SERVER con_server;
+	
+	//g_conf_info.con_net
+	//g_conf_info.con_server
+	
+	if(p){
+		printf("%s\n",p);
+		
+		if (g_conf_info.con_net.dev_ip != sys_str2ip(p)){
+			sys_log(FUNC,LOG_ERR, "%s","NOT ME");
+			return;
+		}
+		
+	}
+
+	memcpy(&conf_net, &g_conf_info.con_net, sizeof(CONFIG_NET));
+	memcpy(&con_server, &g_conf_info.con_server, sizeof(CONFIG_SERVER));
+	
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		conf_net.dev_ip = sys_str2ip(p);
+	}
+
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		conf_net.dev_nm =sys_str2ip(p);
+	}
+
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		conf_net.dev_gw =sys_str2ip(p);
+	}
+
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		conf_net.dns[0] = sys_str2ip(p);
+	}
+
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		conf_net.dns[1] = sys_str2ip(p);
+	}
+
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		strcpy(con_server.dns_str, p);
+		//con_server.server_ip = sys_str2ip(p);
+	}
+
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		con_server.server_port = atoi(p);
+	}
+
+	
+	memcpy(&g_conf_info.con_net, &conf_net, sizeof(CONFIG_NET));
+	
+	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));
+	dns_init(con_server.dns_str);
+	
+	config_save(&g_conf_info);
+	config_net_set(&g_conf_info.con_net);
+
+}
+
+
+
+void pc_get_dev_info(char *info)
+{
+	char dev_ip[16]="";
+	char dev_nm[16]="";
+	char dev_gw[16]="";
+	char dev_dns1[16]="";
+	char dev_dns2[16]="";
+//	char dev_serverip[16]="";
+	char dev_dns_str[50]="";
+
+	strcpy(dev_ip, sys_ip2str_static(g_conf_info.con_net.dev_ip));
+	strcpy(dev_nm, sys_ip2str_static(g_conf_info.con_net.dev_nm));
+	strcpy(dev_gw, sys_ip2str_static(g_conf_info.con_net.dev_gw));
+	strcpy(dev_dns1, sys_ip2str_static(g_conf_info.con_net.dns[0]));
+	strcpy(dev_dns2, sys_ip2str_static(g_conf_info.con_net.dns[1]));
+	//strcpy(dev_serverip, sys_ip2str_static(g_conf_info.con_server.server_ip));
+	strcpy(dev_dns_str, g_conf_info.con_server.dns_str);
+	
+	
+	sprintf(info, "%s|%s|%s|%s|%s|%s|%d", dev_ip, dev_nm, dev_gw, dev_dns1, dev_dns2, dev_dns_str, g_conf_info.con_server.server_port);
+	
+}
+
+
+	
 
 void report_proc(void)
 {
@@ -431,6 +545,9 @@ void report_proc(void)
 	unsigned int socklen;
 	struct hostent *group;
 	struct ip_mreq mreq;
+	int so_broadcast = 1;
+
+	struct sockaddr_in servaddr;
 
 	g_report_sfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (g_report_sfd < 0) {
@@ -447,23 +564,31 @@ void report_proc(void)
 	bcopy((void *) group->h_addr, (void *) &ia, group->h_length);	
 	bcopy(&ia, &mreq.imr_multiaddr.s_addr, sizeof(struct in_addr));
 	mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-	
+
+	/*
 	if (setsockopt(g_report_sfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(struct ip_mreq)) == -1) {
 		perror("setsockopt");
 		return ;
 	}
+	*/
+	
+	setsockopt(g_report_sfd, SOL_SOCKET, SO_BROADCAST, (char *)&so_broadcast, sizeof(so_broadcast));
 	
 	socklen = sizeof(struct sockaddr_in);
 	memset(&peeraddr, 0, socklen);
 	peeraddr.sin_family = AF_INET;
 	inet_pton(AF_INET, GROUP_IP, &peeraddr.sin_addr);
 	peeraddr.sin_port = htons(atoi(GROUP_PORT));
-	
-	
-	if (bind(g_report_sfd, (struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) == -1) {
+
+
+	memset(&servaddr, 0, socklen);
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port = htons(atoi(GROUP_PORT));	
+	if (bind(g_report_sfd, (struct sockaddr *) &servaddr,sizeof(struct sockaddr_in)) == -1) {
 		sys_log(FUNC, LOG_ERR,"bind"); 
 		return ;
 	}
+	
 	sys_log(FUNC, LOG_DBG,"OK: GROUP_IP=%s, GROUP_PORT=%s", GROUP_IP, GROUP_PORT); 
 	for(;;){
 		bzero(recmsg, BUFLEN + 1);
@@ -474,14 +599,21 @@ void report_proc(void)
 			recmsg[n] = 0;
 			sys_log(FUNC, LOG_DBG,"%s", recmsg); 
 
-			if (0 == strcmp(recmsg , PC_TOOL_MSG)){
-				sys_log(FUNC, LOG_DBG,"receive right packet from PC");
+			if (0 == strcmp(recmsg , PC_TOOL_MSG1)){
+
+				/*TODO: 获取IP 等信息*/	
+				pc_get_dev_info(sendmsg);
 				
-				if (sendto	(g_report_sfd, sendmsg, strlen(sendmsg), 0,	(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) < 0) {
-					sys_log(FUNC, LOG_ERR,"can't sendto %s", sendmsg); 
+				if (sendto	(g_report_sfd, sendmsg, strlen(sendmsg), 0,	(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) <=0) {
+					//sys_log(FUNC, LOG_ERR,"can't sendto %s", sendmsg); 
+					perror("sendto");
 				}else{
 					sys_log(FUNC, LOG_DBG,"send ack packet %s", sendmsg); 
 				}				
+			}else{
+				/*TODO: 解析，比对，设置*/
+
+				pc_set_dev_info(recmsg);
 			}			
 		}
 	}
