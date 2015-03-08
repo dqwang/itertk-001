@@ -416,8 +416,9 @@ void mode_init(void)
 
 #define BUFLEN 255
 //#define GROUP_IP "224.0.0.200"
+#define GROUP_IP "239.0.0.100"
 
-#define GROUP_IP "255.255.255.255"
+//#define GROUP_IP "255.255.255.255"
 #define GROUP_PORT "31000"
 #define PC_TOOL_MSG1 "hello"
 //#define PC_TOOL_ACK "fucking"
@@ -494,16 +495,18 @@ void pc_set_dev_info(char *recv_str)
 	if(p){
 		printf("%s\n",p);
 		con_server.server_port = atoi(p);
-	}
+	}	
+	memcpy(&g_conf_info.con_net, &conf_net, sizeof(CONFIG_NET));	
+	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));	
+	config_net_set(&g_conf_info.con_net);
+	
+#if 1//if run this code, ....PC Search Tool may be failed...
+	dns_init(con_server.dns_str);//
+#endif	
+	config_save(&g_conf_info);
+	
 
 	
-	memcpy(&g_conf_info.con_net, &conf_net, sizeof(CONFIG_NET));
-	
-	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));
-	dns_init(con_server.dns_str);
-	
-	config_save(&g_conf_info);
-	config_net_set(&g_conf_info.con_net);
 
 }
 
@@ -546,7 +549,9 @@ void report_proc(void)
 	struct hostent *group;
 	struct ip_mreq mreq;
 	int so_broadcast = 1;
-
+	int optval = 0;
+	char tmp[16]="";
+	
 	struct sockaddr_in servaddr;
 
 	g_report_sfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -565,14 +570,15 @@ void report_proc(void)
 	bcopy(&ia, &mreq.imr_multiaddr.s_addr, sizeof(struct in_addr));
 	mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
-	/*
+	
 	if (setsockopt(g_report_sfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq,sizeof(struct ip_mreq)) == -1) {
 		perror("setsockopt");
 		return ;
-	}
-	*/
+	}	
+	setsockopt(g_report_sfd, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&optval, sizeof(int));
 	
-	setsockopt(g_report_sfd, SOL_SOCKET, SO_BROADCAST, (char *)&so_broadcast, sizeof(so_broadcast));
+	
+	//setsockopt(g_report_sfd, SOL_SOCKET, SO_BROADCAST, (char *)&so_broadcast, sizeof(so_broadcast));
 	
 	socklen = sizeof(struct sockaddr_in);
 	memset(&peeraddr, 0, socklen);
@@ -591,18 +597,24 @@ void report_proc(void)
 	
 	sys_log(FUNC, LOG_DBG,"OK: GROUP_IP=%s, GROUP_PORT=%s", GROUP_IP, GROUP_PORT); 
 	for(;;){
+		struct sockaddr_in sb_addr;
+		unsigned int sb_len;		
 		bzero(recmsg, BUFLEN + 1);
-		n = recvfrom(g_report_sfd, recmsg, BUFLEN, 0,(struct sockaddr *) &peeraddr, &socklen);
-		if (n < 0) {
+		n = recvfrom(g_report_sfd, recmsg, BUFLEN, 0,(struct sockaddr *) &sb_addr, &sb_len);
+		
+		if (n <= 0) {
 			sys_log(FUNC, LOG_ERR,"recvfrom"); 			
 		} else {			
 			recmsg[n] = 0;
-			sys_log(FUNC, LOG_DBG,"%s", recmsg); 
+			sys_log(FUNC, LOG_DBG,"recvfrom %s", recmsg); 
 
 			if (0 == strcmp(recmsg , PC_TOOL_MSG1)){
-
+				
 				/*TODO: 获取IP 等信息*/	
 				pc_get_dev_info(sendmsg);
+
+				//inet_ntop(AF_INET, peeraddr.sin_addr.s_addr, tmp, 16);
+				//sys_log(FUNC, LOG_DBG,"sendto addr: %s", tmp); 
 				
 				if (sendto	(g_report_sfd, sendmsg, strlen(sendmsg), 0,	(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) <=0) {
 					//sys_log(FUNC, LOG_ERR,"can't sendto %s", sendmsg); 

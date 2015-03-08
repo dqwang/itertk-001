@@ -28,7 +28,7 @@ void config_makedefault ( CONFI_DATA *pConf )
 
 
     
-    pConf->con_net.dev_ip = sys_str2ip ( "192.168.1.101" );
+    pConf->con_net.dev_ip = sys_str2ip ( "192.168.1.166" );
     pConf->con_net.dev_nm = sys_str2ip ( "255.255.255.0" );
     pConf->con_net.dev_gw = sys_str2ip ( "192.168.1.1" );
     pConf->con_net.dev_dhcp = OFF;
@@ -132,6 +132,8 @@ void config_net_set(CONFIG_NET *pConf)
 	char cmd[64] = "";
 	char ip[16],nm[16];
 
+	sys_log ( FUNC, LOG_WARN, "%s", "--------1------");
+
 	strcpy(ip,sys_ip2str_static(pConf->dev_ip));
 	strcpy(nm,sys_ip2str_static(pConf->dev_nm));
 	
@@ -139,13 +141,13 @@ void config_net_set(CONFIG_NET *pConf)
 
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-
+	sys_log ( FUNC, LOG_WARN, "%s", "--------2------");
 	sprintf(cmd, "ifconfig eth0 hw ether %02x:%02x:%02x:%02x:%02x:%02x",\
 			 pConf->dev_mac[0], pConf->dev_mac[1], pConf->dev_mac[2],\
 		 	pConf->dev_mac[3],  pConf->dev_mac[4], pConf->dev_mac[5]);
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-
+	sys_log ( FUNC, LOG_WARN, "%s", "--------3------");
 	/*
 	sprintf(cmd, "route add -net 224.0.0.0 netmask 224.0.0.0 dev eth0");
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
@@ -157,35 +159,20 @@ void config_net_set(CONFIG_NET *pConf)
 	sprintf(cmd, "route add -host 255.255.255.255 dev eth0");
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-
+	sys_log ( FUNC, LOG_WARN, "%s", "--------4------");
 	
 	sprintf(cmd, "route add default gw %s eth0", sys_ip2str_static(pConf->dev_gw));
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-	
+	sys_log ( FUNC, LOG_WARN, "%s", "--------5------");
 	sprintf(cmd, "route add -net 192.168.102.0/24 gw 172.16.136.251");
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-
+	sys_log ( FUNC, LOG_WARN, "%s", "--------6------");
 	sprintf(cmd, "route");
 	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-	
-	/*
-
-	printf(" dev_ip = %s \n", sys_ip2str_static(pConf->dev_ip));
-	printf(" dev_gw = %s \n", sys_ip2str_static(pConf->dev_gw));
-	printf(" dev_nm = %s \n", sys_ip2str_static(pConf->dev_nm));
-	printf(" 1.dns = %s \n", sys_ip2str_static(pConf->dns[0]));
-	printf(" 2.dns = %s \n", sys_ip2str_static(pConf->dns[1]));
-	
-	printf(" dev_dhcp = %d \n", pConf->dev_dhcp);
-
-	printf(" mac =  %02x:%02x:%02x:%02x:%02x:%02x\n", pConf->dev_mac[0],pConf->dev_mac[1],pConf->dev_mac[2],pConf->dev_mac[3],\
-				pConf->dev_mac[4],pConf->dev_mac[5]);
-	
-	*/
-		
+	sys_log ( FUNC, LOG_WARN, "%s", "--------7------");
 
 }
 

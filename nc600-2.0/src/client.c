@@ -8,6 +8,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "cmd_def.h"
+#include <netinet/in.h>
+
 
 
 u8 heartbeat_s =HEARTBEAT_TIMEOUT;
@@ -268,6 +270,7 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	fd_set rfds;
 	struct timeval tv;
 	int retval;
+	int ret=-1;
 
 	memset(&sin,0,sizeof(sin));
 	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
@@ -278,11 +281,12 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	s = socket(PF_INET,SOCK_DGRAM,0);
 
 	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));	
-	
-	
-	   /* Watch stdin (fd 0) to see when it has input. */
+#if 0
+	ret=recv(s,recvMsg,MAX_SIZE_DNS,0);
+	sys_log(FUNC, LOG_WARN, " %s", "dns ok");	
+#else
 	   FD_ZERO(&rfds);
-	   FD_SET(0, &rfds);
+	   FD_SET(s, &rfds);
 
 	   /* Wait up to 2 seconds. */
 	   tv.tv_sec = 2;
@@ -293,15 +297,16 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 
 	   if (retval == -1)
 		   perror("select()");
-	   else if (retval)
-	   	sys_log(FUNC, LOG_WARN, " %s", "dns ok");
-		   
-		   /* FD_ISSET(0, &rfds) will be true. */
-	   else
+	   else if (retval){
+		sys_log(FUNC, LOG_WARN, " %s", "recv....");	
+		ret=recv(s,recvMsg,MAX_SIZE_DNS,0);
+		sys_log(FUNC, LOG_WARN, " %s", "recv ok");	
+	   }		
+	   else{
 		   sys_log(FUNC, LOG_ERR, " %s", "dns failed");	
-	
-	
-	return recv(s,recvMsg,MAX_SIZE_DNS,0);
+	   }
+#endif	
+	return ret;
 
 }
 
@@ -331,7 +336,7 @@ int resolve(unsigned char *recvMsg, int len, int len_recvMsg, char *ip)
 		pos = pos + 12 + offset;
 	}
 
-	return -1;
+	return DNS_FAILED;
 }
 
 
@@ -344,27 +349,98 @@ CMD_CODE its_dns(char *www , unsigned int dns, char *ip)
 	int len; /* socket发送数据的长度 */
 	int len_recvMsg;
 	int ret =-1;
-
+	
+	sys_log(FUNC, LOG_WARN, " www=%s, dns=0x%08x, ip=%s", www, dns, ip);
+	
 	len = changeDN(DN,name);	
 	setHead(buf);
 	setQuery(name,buf,len);
 	len += 16;
+	sys_log(FUNC, LOG_WARN, " %s", "---->1");
 	len_recvMsg = sendDNSPacket(buf,len,recvMsg, dns);
-	
+	sys_log(FUNC, LOG_WARN, " %s", "---->2");
 	ret = resolve(recvMsg,len,len_recvMsg, ip);
-
+	sys_log(FUNC, LOG_WARN, "---->3  ret=%d",ret);
 	return ret;
 }
+
+/*
+ * IP String Check
+ */
+#define TRUE 1
+#define FALSE 0
+
+int ip_check(char * ip)
+{
+	if(NULL == ip)	
+		return FALSE;
+	
+	unsigned int result = 0;
+	unsigned int d = 0;  
+	int dotNum = 0;  
+	int dNum = 0;  
+	char c = 0;
+	int char_exit=0;
+	int i;
+	for(i = 0; ; ++i){
+		c = ip[i];
+		if(c >= '0' && c <= '9')   {
+			++ dNum;
+			char_exit++;
+			d = 10 * d + (c - '0');
+			if(d > 255 || d < 0) 
+				return FALSE;
+		}else if(c == '.') {
+			++ dotNum;
+			if(dotNum > dNum)  
+			{
+				return FALSE;
+			}else {
+				result = (result<<8) | d;
+				d = 0;
+			}
+			if (char_exit == 0)
+				return -1;
+			if (char_exit > 0)
+				char_exit = 0;
+		}else if(c == '\0')  {
+			if(dotNum != 3 || char_exit == 0){
+				return FALSE;
+			}else
+			{
+				result = (result<<8) + d;
+				return TRUE;
+			}
+		}else  {
+			return FALSE;
+		}
+	}
+}
+
 
 void dns_init(char * dns_str)
 {
 	char ip_dest[16]="";
+	struct hostent *h;
 	
-	if (strlen(g_conf_info.con_server.dns_str) !=0 && its_dns(dns_str, g_conf_info.con_net.dns[0], ip_dest) == DNS_OK){
-		 g_conf_info.con_server.server_ip = sys_str2ip(ip_dest);
+	sys_log(FUNC, LOG_WARN, " %s", "---->");	
+
+	if (ip_check(dns_str) == TRUE){
+			h = gethostbyname(dns_str);	
+			g_conf_info.con_server.server_ip = sys_str2ip(inet_ntoa(*((struct in_addr *)h->h_addr_list[0])));
+			strcpy(g_conf_info.con_server.dns_str, dns_str);
+			sys_log(FUNC, LOG_MSG, " %s", "DNS  OK");	
+	}else if (strlen(g_conf_info.con_server.dns_str) !=0 ){
+		if (its_dns(dns_str, g_conf_info.con_net.dns[0], ip_dest) == DNS_OK){
+			 g_conf_info.con_server.server_ip = sys_str2ip(ip_dest);
+			 sys_log(FUNC, LOG_MSG, " %s", "DNS  OK");	
+		}else{
+			sys_log(FUNC, LOG_MSG, " %s", "DNS  FAILED");
+		}
+		
 	}
 
-	sys_log(FUNC, LOG_WARN, " %s", ip_dest);	
+	sys_log(FUNC, LOG_WARN, " %s", "<-----");	
 	
 }
 
@@ -388,8 +464,10 @@ int client_init(void)
 	
 	ret = connect(g_sockfd_client,(const struct sockaddr *)&addr, sizeof(addr));
 	in_ip.s_addr = g_conf_info.con_server.server_ip;
-	sys_log(FUNC, LOG_WARN, "ip:%s: %d, ret=%d", inet_ntoa(in_ip) , \
+#if 1	//debug log
+	sys_log(FUNC, LOG_WARN, "alarm server:%s: %d, ret=%d", inet_ntoa(in_ip) , \
 		g_conf_info.con_server.server_port, ret);	
+#endif	
 	if (ret < 0){
 		g_reconnect_flag = RECONNECT_ON;
 		//led_ctrl(LED_D3, LED_OFF);

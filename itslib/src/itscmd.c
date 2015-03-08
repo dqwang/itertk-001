@@ -844,7 +844,6 @@ void printName(int len, char *name)
 	  for(i = 0; i < len; i++) printf("%x.",name[i]);
 	  printf("\n");
 }
-
 int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_ip)
 {
 	int s;
@@ -853,6 +852,7 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	fd_set rfds;
 	struct timeval tv;
 	int retval;
+	int ret=-1;
 
 	memset(&sin,0,sizeof(sin));
 	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
@@ -863,11 +863,12 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	s = socket(PF_INET,SOCK_DGRAM,0);
 
 	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));	
-	
-	
-	   /* Watch stdin (fd 0) to see when it has input. */
+#if 0
+	ret=recv(s,recvMsg,MAX_SIZE_DNS,0);
+	sys_log(FUNC, LOG_WARN, " %s", "dns ok");	
+#else
 	   FD_ZERO(&rfds);
-	   FD_SET(0, &rfds);
+	   FD_SET(s, &rfds);
 
 	   /* Wait up to 2 seconds. */
 	   tv.tv_sec = 2;
@@ -876,40 +877,21 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	   retval = select(s+1, &rfds, NULL, NULL, &tv);
 	   /* Don't rely on the value of tv now! */
 
-	   if (retval == -1){;}
-		   //perror("select()");
-	   else if (retval){;}
-		 //  printf("Data is available now.\n");
-		   /* FD_ISSET(0, &rfds) will be true. */
-	   else{;}
-		   //printf("No data within five seconds.\n");	
-	
-	
-	return recv(s,recvMsg,MAX_SIZE_DNS,0);
+	   if (retval == -1){
+		 ;}
+	   else if (retval){
+		//sys_log(FUNC, LOG_WARN, " %s", "recv....");	
+		ret=recv(s,recvMsg,MAX_SIZE_DNS,0);
+		//sys_log(FUNC, LOG_WARN, " %s", "recv ok");	
+	   }		
+	   else{
+			;	
+	   }
+#endif	
+	return ret;
 
 }
-/*
 
-int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_ip)
-{
-	int s;
-	struct sockaddr_in sin;
-
-	memset(&sin,0,sizeof(sin));
-	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
-	sin.sin_addr.s_addr = dns_ip;
-	sin.sin_family = AF_INET;
-	sin.sin_port = htons(SERVER_PORT_DNS);
-
-	s = socket(PF_INET,SOCK_DGRAM,0);
-
-//	setsockopt
-	
-	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));
-	return recv(s,recvMsg,MAX_SIZE_DNS,0);
-
-}
-*/
 int resolve(unsigned char *recvMsg, int len, int len_recvMsg, char *ip)
 {
 	int pos = len;
