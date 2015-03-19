@@ -505,7 +505,7 @@ void pc_set_dev_info(char *recv_str)
 #endif	
 	config_save(&g_conf_info);
 	
-
+	system("reboot");
 	
 
 }
