@@ -13,7 +13,7 @@
 
 
 u8 heartbeat_s =HEARTBEAT_TIMEOUT;
-u8 heartbeat_timeout = 0;
+u16 heartbeat_timeout = 0;/*FIX BUG001:*/
 
 
 

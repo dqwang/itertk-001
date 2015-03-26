@@ -10,7 +10,7 @@
 
 
 CONFI_DATA g_conf_info;
-void get_mac(void);
+void get_mac_init(void);
 
 
 
@@ -185,8 +185,9 @@ void config_init ( void )
 		sys_log(FUNC, LOG_WARN, "Load configuration %s", CONFIG_FILE);
 		config_load ( &g_conf_info );
 	}
+	
 	config_net_set(&g_conf_info.con_net);
-	//get_mac();
+	get_mac_init();
 }
 
 void config_save ( CONFI_DATA *pConf )
@@ -292,7 +293,7 @@ int set_usr_psw(BYTE *name, BYTE *psw)
 #include <netinet/ether.h>
 #include <netinet/in.h>
 
-void get_mac(void)
+void get_mac_init(void)
 {
 	int sockfd;
 	struct ifreq struReq;

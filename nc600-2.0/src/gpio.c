@@ -6,6 +6,7 @@
 #include "thread.h"
 #include "def.h"
 #include "client.h"
+#include "log.h"
 
 u8 g_alarm_led_flag = ALARM_LED_FLAG_OFF;
 pthread_mutex_t gpio_mutex;
@@ -193,18 +194,26 @@ void system_run_proc(void)
 void cfg_key_proc(void)
 {
    
-   gpio_status cfg_key_val;
-   
+	gpio_status cfg_key_val;
 
-   while (1)
-   {
-      get_gpio(CFG_KEY, &cfg_key_val);
-      if (GS_LOW == cfg_key_val){
-         system("rm -f /mnt/nand1-2/data/SENSER.cfg");
-         system("reboot");
-      }
-      usleep(100*1000);
-   }
+	sys_log(FUNC,LOG_WARN, "%s","start");
+	while (1)
+	{
+		get_gpio(CFG_KEY, &cfg_key_val);
+		if (GS_LOW == cfg_key_val){
+			sys_log(FUNC,LOG_WARN, "%s","3S 2S 1S....");
+			sleep(3);
+			get_gpio(CFG_KEY, &cfg_key_val);
+			if (GS_LOW == cfg_key_val){
+			
+				sys_log(FUNC,LOG_WARN, "%s","Recovery default config ! reboot now");
+				
+				system("rm -f /mnt/nand1-2/data/SENSER.cfg");
+				system("reboot");
+			}
+		}
+		usleep(100*1000);
+	}
 }
 
 int init_gpio(void)
@@ -229,7 +238,7 @@ int init_gpio(void)
 	led_ctrl(LED_D2_ALARM_STATUS, LED_OFF);
 	led_ctrl(LED_D3_ALARM_SERVER_STATUS, LED_OFF);
 
-   set_gpio(CFG_KEY, GD_IN, GS_HIGH);
+   	set_gpio(CFG_KEY, GD_IN, GS_HIGH);
    
 	//trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
 	trd_create(&gpio_trd, (void*)&system_run_proc, NULL);

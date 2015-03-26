@@ -21,6 +21,7 @@
 #include "com.h"
 #include "thread.h"
 #include "log.h"
+#include "system.h"
 
 
 MODECONFIG mode[MAX_COM_PORT][MAX_SESSION];
@@ -432,9 +433,32 @@ int g_report_sfd=0;
 
 extern void config_net_set(CONFIG_NET *pConf);
 extern void dns_init(char * dns_str);
+int str2hex(const char *str)
+{
+	int i=0, tmp, result=0;
+
+	if (str  == NULL)
+		return -1;
+	
+	for(i=0; i<strlen(str); i++){
+		if((str[i]>='0')&&(str[i]<='9'))
+			tmp = str[i]-'0';
+		else if((str[i]>='A')&&(str[i]<='F'))
+			tmp = str[i]-'A'+10;
+		else if((str[i]>='a')&&(str[i]<='f'))
+			tmp = str[i]-'a'+10;
+		else
+			return -1;
+
+		result = result*16+tmp;
+	}
+	return result;
+ }
+
 void pc_set_dev_info(char *recv_str)
 {
 	char* p = strtok(recv_str, "|");
+	char *q;
 	CONFIG_NET conf_net;
 	CONFIG_SERVER con_server;
 	
@@ -496,6 +520,22 @@ void pc_set_dev_info(char *recv_str)
 		printf("%s\n",p);
 		con_server.server_port = atoi(p);
 	}	
+	p = strtok(NULL, "|");
+	if(p){
+		unsigned char i=0;
+		printf("%s\n",p);
+		
+		q=strtok(p, ":");
+		conf_net.dev_mac[i++]=str2hex(q);
+		while(q){
+			q=strtok(NULL, ":");
+			if (q){
+				conf_net.dev_mac[i++]=str2hex(q);				
+			}else{
+				break;
+			}			
+		}		
+	}
 	memcpy(&g_conf_info.con_net, &conf_net, sizeof(CONFIG_NET));	
 	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));	
 	config_net_set(&g_conf_info.con_net);
@@ -521,6 +561,7 @@ void pc_get_dev_info(char *info)
 	char dev_dns2[16]="";
 //	char dev_serverip[16]="";
 	char dev_dns_str[50]="";
+	char dev_mac[18]="";
 
 	strcpy(dev_ip, sys_ip2str_static(g_conf_info.con_net.dev_ip));
 	strcpy(dev_nm, sys_ip2str_static(g_conf_info.con_net.dev_nm));
@@ -530,8 +571,12 @@ void pc_get_dev_info(char *info)
 	//strcpy(dev_serverip, sys_ip2str_static(g_conf_info.con_server.server_ip));
 	strcpy(dev_dns_str, g_conf_info.con_server.dns_str);
 	
+	sprintf(dev_mac, "%02x:%02x:%02x:%02x:%02x:%02x",\
+			 g_conf_info.con_net.dev_mac[0], g_conf_info.con_net.dev_mac[1], g_conf_info.con_net.dev_mac[2],\
+		 	g_conf_info.con_net.dev_mac[3],  g_conf_info.con_net.dev_mac[4], g_conf_info.con_net.dev_mac[5]);
 	
-	sprintf(info, "%s|%s|%s|%s|%s|%s|%d", dev_ip, dev_nm, dev_gw, dev_dns1, dev_dns2, dev_dns_str, g_conf_info.con_server.server_port);
+	sprintf(info, "%s|%s|%s|%s|%s|%s|%d|%s|%s", dev_ip, dev_nm, dev_gw, dev_dns1, dev_dns2, dev_dns_str,\
+							g_conf_info.con_server.server_port,dev_mac,PROGRAM_VERSION);
 	
 }
 

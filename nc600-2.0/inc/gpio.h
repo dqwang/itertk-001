@@ -18,7 +18,7 @@ typedef enum GPIO_NUM{
 
 	PHY_RESET =167, //GPG7
 
-   CFG_KEY = 40//GPB8
+   	CFG_KEY = 40//GPB8
 
 }gpio_num;
 

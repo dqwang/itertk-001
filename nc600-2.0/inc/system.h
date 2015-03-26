@@ -5,7 +5,7 @@
 
 
 #define PRODUCT_NAME    "SENSER"
-#define PROGRAM_VERSION "v2.00"
+#define PROGRAM_VERSION "v2.10"
 
 extern  void sys_version_show ( FILE * stream );
 extern  DWORD sys_str2ip(char *str);
