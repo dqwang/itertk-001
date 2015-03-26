@@ -457,6 +457,9 @@ int client_init(void)
 		perror("socket");
 		return FAILURE;
 	}
+
+	dns_init(g_conf_info.con_server.dns_str);
+	
 	memset(&addr , 0, sizeof(struct sockaddr_in ));	
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = g_conf_info.con_server.server_ip;
