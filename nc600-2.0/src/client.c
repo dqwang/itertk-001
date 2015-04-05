@@ -451,14 +451,20 @@ int client_init(void)
 	struct sockaddr_in  alarm_server;
 	struct in_addr in_ip;
 	int ret = -1;
-	
-	
+	int timeout=CLIENT_CONNECT_TIMEOUT;
+	struct pollfd pollfd_s;
+	int old_fl;
+	int poll_ret;
+	int error;
+	int errorlen=sizeof(error);	
+
+	/*socket*/
 	g_sockfd_client =  socket( AF_INET, SOCK_STREAM, 0 );
 	if (g_sockfd_client < 0){
 		perror("socket");
 		return FAILURE;
 	}
-
+	/*dns*/
 	ret=dns_init(g_conf_info.con_server.dns_str);
 	if (DNS_FAILED == ret){
 		return FAILURE;
@@ -467,25 +473,55 @@ int client_init(void)
 	alarm_server.sin_family = AF_INET;
 	alarm_server.sin_addr.s_addr = g_conf_info.con_server.server_ip;
 	alarm_server.sin_port = htons(g_conf_info.con_server.server_port);	
-	//sys_log(FUNC, LOG_WARN, "x");	
-	ret = connect(g_sockfd_client,(const struct sockaddr *)&alarm_server, sizeof(alarm_server));
-	//sys_log(FUNC, LOG_WARN, "y");	
+
 	in_ip.s_addr = g_conf_info.con_server.server_ip;
-#if 1	//debug log
+
 	sys_log(FUNC, LOG_WARN, "alarm server:ip %s: port %d, fd=%d, ret=%d", inet_ntoa(in_ip) , \
-		g_conf_info.con_server.server_port, g_sockfd_client, ret);	
-#endif	
-	if (ret < 0){
-		g_reconnect_flag = RECONNECT_ON;
-		//led_ctrl(LED_D3, LED_OFF);
-		if (g_sockfd_client > 0){
-			g_sockfd_client_status = SOCKFD_CLIENT_NULL;
-			close(g_sockfd_client);
-			g_sockfd_client = -1;			
-		}
-		return FAILURE;
+		g_conf_info.con_server.server_port, g_sockfd_client, ret);
+	/*connect poll*/
+	old_fl=fcntl(g_sockfd_client, F_GETFL, 0);
+	if (fcntl(g_sockfd_client, F_SETFL, old_fl |O_NONBLOCK ) < 0) {
+		goto err;
 	}
-	return SUCCESS;	
+	ret = connect(g_sockfd_client,(const struct sockaddr *)&alarm_server, sizeof(alarm_server));
+	if ((-1 == ret)&&(errno != EINPROGRESS)){
+		goto err;
+	}
+	pollfd_s.fd = g_sockfd_client;
+	pollfd_s.events = POLLOUT | POLLERR | POLLHUP | POLLNVAL;
+	errno = 0;
+
+	poll_ret = poll(&pollfd_s, 1, timeout);
+	if (0 == poll_ret){/*timeout*/
+		goto err;
+	}
+	if (-1 == poll_ret){/*errors*/
+		if ( EINTR == errno){
+			goto err;
+		}
+		goto err;
+	}
+	if (pollfd_s.revents & (POLLERR | POLLHUP | POLLNVAL) ){
+		goto err;
+	}
+	ret = getsockopt(g_sockfd_client, SOL_SOCKET, SO_ERROR, &error, (socklen_t*)&errorlen);
+	if ((-1 == ret) || 0 != error ){
+		goto err;
+	}
+
+	sys_log(FUNC, LOG_MSG, "Connect Alarm Server Successfully");
+	fcntl(g_sockfd_client, F_SETFL, old_fl);
+	return SUCCESS;
+err:
+	g_reconnect_flag = RECONNECT_ON;
+	//led_ctrl(LED_D3, LED_OFF);
+	if (g_sockfd_client > 0){
+		g_sockfd_client_status = SOCKFD_CLIENT_NULL;
+		close(g_sockfd_client);
+		g_sockfd_client = -1;			
+	}
+	sys_log(FUNC, LOG_ERR, "Connect Alarm Server Failed");
+	return FAILURE;
 }
 
 
@@ -509,8 +545,8 @@ int client_reconnect(void)
 			g_sockfd_client = -1;
 			
 		}
-		sys_log(FUNC, LOG_WARN, "Reconnect duration %dS:  counter: %d ...",CLIENT_RECONNECT_TIMEOUT, ++counter);
-		sleep(CLIENT_RECONNECT_TIMEOUT);
+		sys_log(FUNC, LOG_WARN, "Reconnect duration %dS:  counter: %d ...",CLIENT_RECONNECT_DURATION, ++counter);
+		sleep(CLIENT_RECONNECT_DURATION);
 			
 	}	
 
@@ -529,12 +565,7 @@ void client_process(void)
 	u8 alarm_in[ALARM_MAX];	
 	
 	while (1)
-	{
-		FD_ZERO(&readfds);
-		FD_SET(g_sockfd_client, &readfds);
-		tv.tv_sec = 0;
-		tv.tv_usec = 1000;
-		
+	{			
 		heartbeat_timeout ++;
 		sys_log(FUNC, LOG_DBG, "heartbeat_timeout = %d heartbeat_s=%d",heartbeat_timeout, heartbeat_s);
 		if (heartbeat_timeout > heartbeat_s){
@@ -551,9 +582,12 @@ void client_process(void)
 			sys_log(FUNC, LOG_WARN, "g_sockfd_client");
 			g_reconnect_flag = RECONNECT_ON;
 			continue;
-		}		
-
+		}	
 		
+		FD_ZERO(&readfds);
+		FD_SET(g_sockfd_client, &readfds);
+		tv.tv_sec = 0;
+		tv.tv_usec = 1000;		
 
 		res = select(g_sockfd_client + 1, &readfds, NULL, NULL, &tv);
 		if (res < 0){
