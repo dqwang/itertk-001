@@ -37,15 +37,15 @@
 */
 typedef struct tagCONFIG_SYS
 {
-    char  host_name[32];
-    char  host_pos[32];
-    char  host_sn[32];
-    char  sw_ver[32];
-    char  fpga_ver[32];
-    char  web_ver[32];
-    char  host_id[32];
-    char  description[32];
-    BYTE  rsvd[32];
+	char  host_name[32];
+	char  host_pos[32];
+	char  host_sn[32];
+	char  sw_ver[32];
+	char  hw_ver[32];
+	//char	web_ver[32];
+	char  host_id[32];
+	char  description[32];
+	BYTE  rsvd[32];
 
 } CONFIG_SYS;
 
@@ -126,6 +126,7 @@ typedef struct tagCONFIG_LIMIT
 typedef struct tagCONFIG_GPIO
 {
     int alarm[8];
+    char alarm_on_off[8];
 }CONFIG_GPIO;
 
 

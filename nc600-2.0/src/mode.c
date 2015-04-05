@@ -432,7 +432,7 @@ int g_report_sfd=0;
 //char* sys_ip2str_static ( DWORD ip )
 
 extern void config_net_set(CONFIG_NET *pConf);
-extern void dns_init(char * dns_str);
+extern int dns_init(char * dns_str);
 int str2hex(const char *str)
 {
 	int i=0, tmp, result=0;
@@ -461,6 +461,7 @@ void pc_set_dev_info(char *recv_str)
 	char *q;
 	CONFIG_NET conf_net;
 	CONFIG_SERVER con_server;
+	int ret=-1;
 	
 	//g_conf_info.con_net
 	//g_conf_info.con_server
@@ -541,7 +542,7 @@ void pc_set_dev_info(char *recv_str)
 	config_net_set(&g_conf_info.con_net);
 	
 #if 1//if run this code, ....PC Search Tool may be failed...
-	dns_init(con_server.dns_str);//
+	ret=dns_init(con_server.dns_str);
 #endif	
 	config_save(&g_conf_info);
 	
@@ -593,9 +594,9 @@ void report_proc(void)
 	unsigned int socklen;
 	struct hostent *group;
 	struct ip_mreq mreq;
-	int so_broadcast = 1;
+	//int so_broadcast = 1;
 	int optval = 0;
-	char tmp[16]="";
+	//char tmp[16]="";
 	
 	struct sockaddr_in servaddr;
 

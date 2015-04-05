@@ -45,14 +45,10 @@ void show_sw_ver(void)
 	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"sw_ver\" type=\"text\" value=\"%s\" size=\"30\" readonly=\"true\"/></td>\n", con_sys.sw_ver);
 }
 
-void show_fpga_ver(void)
-{
-	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"fpga_ver\" type=\"text\" value=\"%s\" size=\"30\" readonly=\"true\"/></td>\n", con_sys.fpga_ver);
-}
 
-void show_web_ver(void)
+void show_hw_ver(void)
 {
-	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"web_ver\" type=\"text\" value=\"%s\" size=\"30\" readonly=\"true\"/></td>\n", con_sys.web_ver);
+	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"web_ver\" type=\"text\" value=\"%s\" size=\"30\" readonly=\"true\"/></td>\n", con_sys.hw_ver);
 }
 
 void show_host_id(void)
@@ -172,7 +168,7 @@ int cgiMain()
 	fprintf(cgiOut, "              <tr>\n");
 	fprintf(cgiOut, "                <td width=\"10%%\" height=\"55\" valign=\"middle\"><img src=\"../images/title.gif\" width=\"54\" height=\"55\"></td>\n");
 	fprintf(cgiOut, "                <td width=\"90%%\" valign=\"top\"><span class=\"left_txt2\">在这里，您可以根据您的要求，修改设置设备的</span><span class=\"left_txt3\">基本参数</span><span class=\"left_txt2\">！</span><br>\n");
-	fprintf(cgiOut, "                          <span class=\"left_txt2\">包括</span><span class=\"left_txt3\">服务器名称，服务器位置，描述</span><span class=\"left_txt2\">以及</span><span class=\"left_txt3\">设备ID</span><span class=\"left_txt2\">。 </span></td>\n");
+	fprintf(cgiOut, "                          <span class=\"left_txt2\">包括</span><span class=\"left_txt3\">设备名称，设备位置，描述</span><span class=\"left_txt2\">以及</span><span class=\"left_txt3\">设备ID</span><span class=\"left_txt2\">。 </span></td>\n");
 	fprintf(cgiOut, "              </tr>\n");
 	fprintf(cgiOut, "            </table></td>\n");
 	fprintf(cgiOut, "          </tr>\n");
@@ -191,12 +187,12 @@ int cgiMain()
 	fprintf(cgiOut, "              <form name=\"form1\" method=\"POST\" action=\"");
 	fprintf(cgiOut, "\">\n");
 	fprintf(cgiOut, "                <tr>\n");
-	fprintf(cgiOut, "                  <td width=\"20%%\" height=\"30\" align=\"right\" bgcolor=\"#f2f2f2\" class=\"left_txt2\">服务器名称：</td>\n");
+	fprintf(cgiOut, "                  <td width=\"20%%\" height=\"30\" align=\"right\" bgcolor=\"#f2f2f2\" class=\"left_txt2\">设备名称：</td>\n");
 	fprintf(cgiOut, "                  <td width=\"3%%\" bgcolor=\"#f2f2f2\">&nbsp;</td>\n");
 	show_host_name();
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
-	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">服务器位置：</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">设备位置：</td>\n");
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	show_host_pos();
 	fprintf(cgiOut, "                </tr>\n");
@@ -209,11 +205,14 @@ int cgiMain()
 	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">软件版本： </td>\n");
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	show_sw_ver();
+
+	/*
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
 	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" bgcolor=\"#f2f2f2\" class=\"left_txt2\">描述：</td>\n");
 	fprintf(cgiOut, "                  <td bgcolor=\"#f2f2f2\">&nbsp;</td>\n");
 	show_description();
+	*/
 /*	
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
@@ -223,14 +222,16 @@ int cgiMain()
 */
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
-	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" bgcolor=\"#F2F2F2\" class=\"left_txt2\">WEB版本：</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" bgcolor=\"#F2F2F2\" class=\"left_txt2\">硬件版本：</td>\n");
 	fprintf(cgiOut, "                  <td bgcolor=\"#F2F2F2\">&nbsp;</td>\n");
-	show_web_ver();
+	show_hw_ver();
+	/*
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
 	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">设备ID：</td>\n");
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	show_host_id();
+	*/
 	fprintf(cgiOut, "                </tr>\n");
 	//fprintf(cgiOut, "                <tr>\n");
 	//fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" bgcolor=\"#f2f2f2\" class=\"left_txt2\">联系方式： </td>\n");

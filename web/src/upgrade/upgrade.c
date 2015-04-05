@@ -257,7 +257,7 @@ void showmain(int flag)
 	fprintf(cgiOut, "              <tr>\n");
 	fprintf(cgiOut, "                <td width=\"10%%\" height=\"55\" valign=\"middle\"><img src=\"../images/usercontrol.gif\" width=\"54\" height=\"55\"></td>\n");
 	fprintf(cgiOut, "                <td width=\"90%%\" valign=\"top\"><span class=\"left_txt2\">在这里，您可以对本产品进行软件升级！</span><span class=\"left_txt3\"></span><span class=\"left_txt2\">！</span><br>\n");
-	fprintf(cgiOut, "                          <span class=\"left_txt2\"></span><span class=\"left_txt3\">注意：只有本公司提供的升级包才能成功升级！</span><span class=\"left_txt2\"></span><span class=\"left_txt3\"></span><span class=\"left_txt2\">。 </span></td>\n");
+	fprintf(cgiOut, "                          <span class=\"left_txt2\"></span><span class=\"left_txt3\">注意：只有本公司提供的升级包才能成功升级！通过升级本设备的软件，您将获得新的功能。注意:升级过程中不能关闭设备电源，否则将导致设备损坏无法使用。升级过程约30秒，当升级结束后，设备将自动重启。点击重启按钮，设备也将重启。</span><span class=\"left_txt2\"></span><span class=\"left_txt3\"></span><span class=\"left_txt2\">。 </span></td>\n");
 	fprintf(cgiOut, "              </tr>\n");
 	fprintf(cgiOut, "            </table></td>\n");
 	fprintf(cgiOut, "          </tr>\n");

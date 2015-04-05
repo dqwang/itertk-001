@@ -28,7 +28,7 @@ enum protocol{
 
 #define HEARTBEAT_TIMEOUT 10
 
-#define CLIENT_RECONNECT_TIMEOUT 1
+#define CLIENT_RECONNECT_TIMEOUT 10
 
 #define RECONNECT_ON 1
 #define RECONNECT_OFF 0
@@ -44,7 +44,7 @@ int client_init(void);
 int client_reconnect(void);
 void client_process(void);
 void client_thread(void);
-void dns_init(char * dns_str);
+int dns_init(char * dns_str);
 
 
 

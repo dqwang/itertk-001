@@ -14,6 +14,7 @@ all:
 	cd src/upgrade;make
 	cd src/vlan;make
 	cd src/gpio;make
+	cd src/gpio_set;make
 	cd src/server;make
 clean:
 	cd src/com;make clean
@@ -29,6 +30,7 @@ clean:
 	cd src/upgrade;make clean
 #	cd src/vlan;make clean
 	cd src/gpio;make clean
+	cd src/gpio_set;make clean
 	cd src/server;make clean
 
 copy:

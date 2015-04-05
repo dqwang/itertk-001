@@ -56,7 +56,7 @@ int cgiMain()
 	//fprintf(cgiOut, "    <td width=\"61%%\" height=\"64\"><img src=\"../images/logo.gif\" width=\"262\" height=\"64\"></td>\n");
 	fprintf(cgiOut, "    <td width=\"39%%\" valign=\"top\"><table width=\"100%%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\">\n");
 	fprintf(cgiOut, "      <tr>\n");
-	fprintf(cgiOut, "        <td width=\"74%%\" height=\"38\" class=\"admin_txt\"><b> %s </b> 您好,感谢登陆使用！</td>\n", name);
+	fprintf(cgiOut, "        <td width=\"74%%\" height=\"38\" class=\"admin_txt\"><b> %s </b> 您好,感谢登录使用！</td>\n", name);
 	fprintf(cgiOut, "        <td width=\"22%%\"><a href=\"#\" target=\"_self\" onClick=\"logout();\"><img src=\"../images/out.gif\" alt=\"安全退出\" width=\"46\" height=\"20\" border=\"0\"></a></td>\n");
 	fprintf(cgiOut, "        <td width=\"4%%\">&nbsp;</td>\n");
 	fprintf(cgiOut, "      </tr>\n");

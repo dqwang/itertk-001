@@ -36,6 +36,9 @@
 //#define SERVER_IP "192.168.1.100"
 #define SERVER_IP ""
 
+#define DEVICE_IP "192.168.1.166"
+#define HOST_SN "DD-RTNS8S-ZxxxxA"
+
 
 
 typedef struct tagCONFIG_SYS
@@ -44,8 +47,8 @@ typedef struct tagCONFIG_SYS
     char  host_pos[32];
     char  host_sn[32];
     char  sw_ver[32];
-    char  fpga_ver[32];
-    char  web_ver[32];
+    char  hw_ver[32];
+    //char  web_ver[32];
     char  host_id[32];
     char  description[32];
     BYTE  rsvd[32];
@@ -130,7 +133,9 @@ typedef struct tagCONFIG_LIMIT
 typedef struct tagCONFIG_GPIO
 {
     int alarm[8];
+    char alarm_on_off[8];
 }CONFIG_GPIO;
+
 
 #define DNS_STR_LEN 50
 typedef struct tagCONFIG_SERVER
@@ -150,6 +155,7 @@ typedef struct tagCONFIG_DATA
 	CONFIG_LIMIT con_lim[MAX_COM_PORT];
 	USR_INFO con_usr[MAX_USR_NUM];
 	CONFIG_SERVER con_server;
+	CONFIG_GPIO con_gpio;
 } CONFI_DATA;
 
 ///全局配置参数声明

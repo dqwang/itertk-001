@@ -25,10 +25,10 @@ void config_makedefault ( CONFI_DATA *pConf )
     strcpy ( pConf->con_sys.host_name, PRODUCT_NAME );
     bzero ( pConf->con_sys.host_pos, sizeof ( pConf->con_sys.host_pos ) );
     sprintf(pConf->con_sys.sw_ver, "%s  %s  %s", PROGRAM_VERSION, __DATE__, __TIME__);
-
+    strcpy(pConf->con_sys.hw_ver, HW_VERSION);
 
     
-    pConf->con_net.dev_ip = sys_str2ip ( "192.168.1.166" );
+    pConf->con_net.dev_ip = sys_str2ip ( DEVICE_IP );
     pConf->con_net.dev_nm = sys_str2ip ( "255.255.255.0" );
     pConf->con_net.dev_gw = sys_str2ip ( "192.168.1.1" );
     pConf->con_net.dev_dhcp = OFF;
@@ -106,6 +106,15 @@ void config_makedefault ( CONFI_DATA *pConf )
 	pConf->con_server.server_port = SERVER_PORT;    
 	strcpy(pConf->con_server.dns_str, "www.baidu.com");
 
+
+	pConf->con_gpio.alarm_on_off[0]=1;
+	pConf->con_gpio.alarm_on_off[1]=1;
+	pConf->con_gpio.alarm_on_off[2]=1;
+	pConf->con_gpio.alarm_on_off[3]=1;
+	pConf->con_gpio.alarm_on_off[4]=1;
+	pConf->con_gpio.alarm_on_off[5]=1;
+	pConf->con_gpio.alarm_on_off[6]=1;
+	pConf->con_gpio.alarm_on_off[7]=1;
    
     config_save ( pConf );
 }

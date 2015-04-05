@@ -5,7 +5,8 @@
 
 
 #define PRODUCT_NAME    "SENSER"
-#define PROGRAM_VERSION "v2.10"
+#define PROGRAM_VERSION "v2.30"
+#define HW_VERSION "YF1402_101_000_003"
 
 extern  void sys_version_show ( FILE * stream );
 extern  DWORD sys_str2ip(char *str);

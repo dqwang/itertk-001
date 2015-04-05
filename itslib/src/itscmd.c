@@ -844,15 +844,15 @@ void printName(int len, char *name)
 	  for(i = 0; i < len; i++) printf("%x.",name[i]);
 	  printf("\n");
 }
+
 int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_ip)
 {
-	int s;
+	int socket_fd;
 	struct sockaddr_in sin;
-
 	fd_set rfds;
 	struct timeval tv;
 	int retval;
-	int ret=-1;
+	int ret=0;
 
 	memset(&sin,0,sizeof(sin));
 	//sin.sin_addr.s_addr = inet_addr("192.168.1.1");
@@ -860,37 +860,33 @@ int sendDNSPacket(unsigned char *buf, int len, char *recvMsg, unsigned int dns_i
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(SERVER_PORT_DNS);
 
-	s = socket(PF_INET,SOCK_DGRAM,0);
+	socket_fd = socket(PF_INET,SOCK_DGRAM,0);
+	//sys_log(FUNC, LOG_WARN, " %s %x", "debug 2", s);
+	sendto(socket_fd,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));	
+	FD_ZERO(&rfds);
+	FD_SET(socket_fd, &rfds);
+	//sys_log(FUNC, LOG_WARN, " %s %x", "debug",rfds);
+	/* Wait up to 2 seconds. */
+	tv.tv_sec = 2;
+	tv.tv_usec = 0;
 
-	sendto(s,buf,len,0,(struct sockaddr *)&sin,sizeof(sin));	
-#if 0
-	ret=recv(s,recvMsg,MAX_SIZE_DNS,0);
-	sys_log(FUNC, LOG_WARN, " %s", "dns ok");	
-#else
-	   FD_ZERO(&rfds);
-	   FD_SET(s, &rfds);
+	retval = select(socket_fd+1, &rfds, NULL, NULL, &tv);
+	/* Don't rely on the value of tv now! */
 
-	   /* Wait up to 2 seconds. */
-	   tv.tv_sec = 2;
-	   tv.tv_usec = 0;
-	
-	   retval = select(s+1, &rfds, NULL, NULL, &tv);
-	   /* Don't rely on the value of tv now! */
+	if (retval == -1)
+	perror("select()");
+	else if (retval){		
+		ret=recv(socket_fd,recvMsg,MAX_SIZE_DNS,0);			
+	}		
+	else{
+		;//sys_log(FUNC, LOG_ERR, " %s", "dns failed");	
+	}
 
-	   if (retval == -1){
-		 ;}
-	   else if (retval){
-		//sys_log(FUNC, LOG_WARN, " %s", "recv....");	
-		ret=recv(s,recvMsg,MAX_SIZE_DNS,0);
-		//sys_log(FUNC, LOG_WARN, " %s", "recv ok");	
-	   }		
-	   else{
-			;	
-	   }
-#endif	
+	close(socket_fd);
 	return ret;
 
 }
+
 
 int resolve(unsigned char *recvMsg, int len, int len_recvMsg, char *ip)
 {

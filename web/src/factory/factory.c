@@ -107,7 +107,7 @@ int cgiMain()
 	fprintf(cgiOut, "              <tr>\n");
 	fprintf(cgiOut, "                <td width=\"10%%\" height=\"55\" valign=\"middle\"><img src=\"../images/title.gif\" width=\"54\" height=\"55\"></td>\n");
 	fprintf(cgiOut, "                <td width=\"90%%\" valign=\"top\"><span class=\"left_txt2\">在这里，您可以恢复出厂设置</span><span class=\"left_txt3\"></span><span class=\"left_txt2\">！</span><br>\n");
-	fprintf(cgiOut, "                          <span class=\"left_txt2\"></span><span class=\"left_txt3\">注意：出厂IP为</span><span class=\"left_txt2\">192.168.1.101，用户名：root，密码：123456</span><span class=\"left_txt3\"></span><span class=\"left_txt2\">。 </span></td>\n");
+	fprintf(cgiOut, "                          <span class=\"left_txt2\"></span><span class=\"left_txt3\">注意：出厂IP为</span><span class=\"left_txt2\">192.168.1.166，用户名：root，密码：123456</span><span class=\"left_txt3\"></span><span class=\"left_txt2\">。 </span></td>\n");
 	fprintf(cgiOut, "              </tr>\n");
 	fprintf(cgiOut, "            </table></td>\n");
 	fprintf(cgiOut, "          </tr>\n");

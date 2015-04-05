@@ -329,6 +329,7 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 {
     ITSIP_PACKET its_ack_pak;
     BYTE id;
+    int i=0;
     
     switch(p_net_head->itsip_data[0])
     {
@@ -401,6 +402,10 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 		mygpio.alarm[6] = alarm;
 		get_gpio(ALARM_IN8,&alarm);
 		mygpio.alarm[7] = alarm;
+
+		for (i=0;i<8;i++){
+			mygpio.alarm_on_off[i] = g_conf_info.con_gpio.alarm_on_off[i];
+		}		
 		
 		itsip_pack(ITS_ACK_CONF_QUERY, sizeof(CONFIG_GPIO), 0, NULL, &its_ack_pak);
 		
