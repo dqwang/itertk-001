@@ -301,19 +301,19 @@ CMD_CODE its_factory_set(char* name)
 	itsip_pack(ITS_FACTORY_SET, 0, 0, NULL, &set_pak);
 
 	if(net_conn_connect(&conn) == FAILURE)
-        return CONN_FAILED;
+		return CONN_FAILED;
 
 	if(net_conn_send(&conn, &set_pak.head, NULL, 0) == FAILURE)
-    {
-        net_conn_close(&conn);
-        return SEND_FAILED;
-    }
+	{
+		net_conn_close(&conn);
+		return SEND_FAILED;
+	}
 
 	if(net_conn_recv(&conn, &set_pak.head, sizeof(ITSIP)) == FAILURE)
-    {
-        net_conn_close(&conn);
-        return RECV_FAILED;
-    }
+	{
+		net_conn_close(&conn);
+		return RECV_FAILED;
+	}
 	net_conn_close(&conn);
 	return set_pak.head.itsip_data[0];
 }

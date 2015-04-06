@@ -1,21 +1,3 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright (c) 2010, 浙江共创技术有限公司
-///    All rights reserved.
-///
-/// @file   config.h
-/// @brief  配置定义
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010-04-24
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////#include <stdio.h>
-
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 #include "def.h"
@@ -39,8 +21,6 @@
 #define DEVICE_IP "192.168.1.166"
 #define HOST_SN "DD-RTNS8S-ZxxxxA"
 
-
-
 typedef struct tagCONFIG_SYS
 {
     char  host_name[32];
@@ -48,7 +28,6 @@ typedef struct tagCONFIG_SYS
     char  host_sn[32];
     char  sw_ver[32];
     char  hw_ver[32];
-    //char  web_ver[32];
     char  host_id[32];
     char  description[32];
     BYTE  rsvd[32];
@@ -158,63 +137,14 @@ typedef struct tagCONFIG_DATA
 	CONFIG_GPIO con_gpio;
 } CONFI_DATA;
 
-///全局配置参数声明
+
 extern  CONFI_DATA g_conf_info;
-
-//////////////////////////////////////////////////////////////////////////
-///
-///     配置参数初始化
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
+void reconfig(CONFI_DATA *pConf);
 extern  void config_init ( void );
-//////////////////////////////////////////////////////////////////////////
-///
-///     配置参数保存
-///     @param *pConf 参数指针
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
 extern  void config_save ( CONFI_DATA *pConf );
-//////////////////////////////////////////////////////////////////////////
-///
-///     通过name查找配置用户结构信息
-///     @param *name user的name
-///     @return USR_INFO* 用户信息结构
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
 extern USR_INFO* get_usr_info(BYTE *name);
-//////////////////////////////////////////////////////////////////////////
-///
-///     添加配置用户结构信息
-///     @param *name user的name
-///     @param *psw user的passwd
-///     @return int 返回码
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-24
-//////////////////////////////////////////////////////////////////////////
 extern int sys_usr_add(BYTE* name, BYTE* psw);
-//////////////////////////////////////////////////////////////////////////
-///
-///     更改配置用户的名称
-///     @param *oname
-///     @param *nname
-///     @return int FAILURE  SUCCESS
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-28
-//////////////////////////////////////////////////////////////////////////
 extern int set_usr_name(BYTE *oname, BYTE *nname);
-//////////////////////////////////////////////////////////////////////////
-///
-///     更改配置用户的密码
-///     @param *oname
-///     @param *psw
-///     @return int FAILURE  SUCCESS
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-04-28
-//////////////////////////////////////////////////////////////////////////
 extern int set_usr_psw(BYTE *name, BYTE *psw);
-
 #endif
 

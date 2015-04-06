@@ -192,7 +192,7 @@ int cgiMain()
 			
 			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
 			//fprintf(cgiOut, "window.setTimeout(function(){top.window.location.href=\"../login.html\"},000)\n");
-			fprintf(cgiOut, "window.alert(\"升级成功，请重启系统\");\n");
+			fprintf(cgiOut, "window.alert(\"升级成功，重启系统\");\n");
 			fprintf(cgiOut, "top.window.location.href=\"../login.html\";\n");
 			
 		

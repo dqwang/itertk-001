@@ -7,6 +7,7 @@
 #include "def.h"
 #include "client.h"
 #include "log.h"
+#include "config.h"
 
 u8 g_alarm_led_flag = ALARM_LED_FLAG_OFF;
 pthread_mutex_t gpio_mutex;
@@ -19,14 +20,14 @@ int set_gpio(gpio_num gn, gpio_dir gd, gpio_status gs)
 	pthread_mutex_lock(&gpio_mutex);
 	
 	fp = fopen("/sys/class/gpio/export","w");
-	if (fp < 0)
+	if (NULL == fp)
 		goto err;
 	fprintf(fp, "%d", gn);
 	fclose(fp);
 
 	sprintf(path, "/sys/class/gpio/gpio%d/direction", gn);
 	fp = fopen(path,"w");
-	if (fp < 0)
+	if (NULL == fp)
 		goto err;
 	fprintf(fp, ((gd == GD_IN)? "in":"out"));
 	fclose(fp);
@@ -34,13 +35,13 @@ int set_gpio(gpio_num gn, gpio_dir gd, gpio_status gs)
 	
 	sprintf(path, "/sys/class/gpio/gpio%d/value", gn);
 	fp = fopen(path, "w");
-	if (fp < 0)
+	if (NULL == fp)
 		goto err;
 	fprintf(fp, "%d", gs);
 	fclose(fp);	
 
 	fp = fopen("/sys/class/gpio/unexport","w");
-	if (fp < 0)
+	if (NULL == fp)
 		goto err;
 	fprintf(fp, "%d", gn);
 	fclose(fp);
@@ -63,14 +64,14 @@ int get_gpio(gpio_num gn, gpio_status *gsP)
 		goto err;
 	
 	fp = fopen("/sys/class/gpio/export","w");
-	if (fp < 0)
+	if (NULL == fp)
 		goto err;
 	fprintf(fp, "%d", gn);
 	fclose(fp);
 
 	sprintf(path, "/sys/class/gpio/gpio%d/value", gn);
 	fp = fopen(path, "r");
-	if (fp < 0)
+	if (NULL == fp)
 		goto err;
 #define SIZE 1
 #define CNT 1
@@ -81,7 +82,7 @@ int get_gpio(gpio_num gn, gpio_status *gsP)
 	fclose(fp);
 
 	fp = fopen("/sys/class/gpio/unexport","w");
-	if (fp < 0)
+	if (NULL == fp)
 		goto err;
 	fprintf(fp, "%d", gn);
 	fclose(fp);
@@ -89,6 +90,9 @@ int get_gpio(gpio_num gn, gpio_status *gsP)
 	return 0;
 err:
 	printf(" get_gpio() args error!\n");
+	if (NULL != fp){
+		fclose(fp);
+	}
 	pthread_mutex_unlock(&gpio_mutex);
 	return -1;
 }
@@ -165,6 +169,7 @@ void alarm_proc(void)
 {
 	u8 alarm_in[ALARM_MAX];
 	u8 num_to_send=0;	
+	sys_log(FUNC,LOG_WARN, "%s","start");
 	while (1)
 	{
 		if (ALARM_ON == is_alarm(alarm_in)){			
@@ -179,7 +184,7 @@ void alarm_proc(void)
 
 void system_run_proc(void)
 {
-	
+	sys_log(FUNC, LOG_MSG, "start");
 	while (1)
 	{
 		led_ctrl(LED_D1_SYSTEM_STATUS, LED_ON);
@@ -193,10 +198,9 @@ void system_run_proc(void)
 
 void cfg_key_proc(void)
 {
-   
-	gpio_status cfg_key_val;
+   	gpio_status cfg_key_val;
 
-	sys_log(FUNC,LOG_WARN, "%s","start");
+	sys_log(FUNC, LOG_MSG, "start");
 	while (1)
 	{
 		get_gpio(CFG_KEY, &cfg_key_val);
@@ -208,8 +212,8 @@ void cfg_key_proc(void)
 			
 				sys_log(FUNC,LOG_WARN, "%s","Recovery default config ! reboot now");
 				
-				system("rm -f /mnt/nand1-2/data/SENSER.cfg");
-				system("reboot");
+				reconfig(&g_conf_info);
+				
 			}
 		}
 		usleep(100*1000);

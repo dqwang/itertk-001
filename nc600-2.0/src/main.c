@@ -14,20 +14,12 @@ int main ( int argc, char **argv )
 {
 	sys_version_show ( stdout );
 	config_init();
-	web_init();
-	mode_init();
-	report_dev_info_init();
-	com_init();
-	init_gpio();
-	
-	client_init();
-	client_thread();
-	
+	web_init();	
+	report_dev_info_init();	
+	init_gpio();	
+	client_thread();	
 	system("telnetd");
-
-	led_ctrl(LED_D1_SYSTEM_STATUS, LED_ON);
-
-	//dns_init(g_conf_info.con_server.dns_str);
+	led_ctrl(LED_D1_SYSTEM_STATUS, LED_ON);	
 
 	while(1)
 	{		

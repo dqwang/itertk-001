@@ -415,7 +415,7 @@ int ip_check(char * ip)
 }
 
 
-int dns_init(char * dns_str)
+int dns_resolution(char * dns_str)
 {
 	char ip_dest[16]="";
 	struct hostent *h;
@@ -439,14 +439,11 @@ int dns_init(char * dns_str)
 		}
 		
 	}
-	return DNS_FAILED;
-
-	//sys_log(FUNC, LOG_DBG, " %s", "dns stop :)");	
-	
+	return DNS_FAILED;	
 }
 
 #endif
-int client_init(void)
+int client_connect_server(void)
 {
 	struct sockaddr_in  alarm_server;
 	struct in_addr in_ip;
@@ -465,7 +462,7 @@ int client_init(void)
 		return FAILURE;
 	}
 	/*dns*/
-	ret=dns_init(g_conf_info.con_server.dns_str);
+	ret=dns_resolution(g_conf_info.con_server.dns_str);
 	if (DNS_FAILED == ret){
 		return FAILURE;
 	}
@@ -483,7 +480,7 @@ int client_init(void)
 	if (fcntl(g_sockfd_client, F_SETFL, old_fl |O_NONBLOCK ) < 0) {
 		goto err;
 	}
-	ret = connect(g_sockfd_client,(const struct sockaddr *)&alarm_server, sizeof(alarm_server));
+	ret = connect(g_sockfd_client,(const struct sockaddr *)&alarm_server, sizeof(alarm_server));/*from block to nonblock */
 	if ((-1 == ret)&&(errno != EINPROGRESS)){
 		goto err;
 	}
@@ -538,14 +535,14 @@ int client_reconnect(void)
 		g_sockfd_client = -1;		
 	}
 	led_ctrl(LED_D3_ALARM_SERVER_STATUS, LED_OFF);
-	while (FAILURE == client_init()){
+	while (FAILURE == client_connect_server()){
 		if (g_sockfd_client > 0){
 			g_sockfd_client_status = SOCKFD_CLIENT_NULL;
 			close(g_sockfd_client);
 			g_sockfd_client = -1;
 			
 		}
-		sys_log(FUNC, LOG_WARN, "Reconnect duration %dS:  counter: %d ...",CLIENT_RECONNECT_DURATION, ++counter);
+		sys_log(FUNC, LOG_WARN, "Reconnect duration %dS:  counter: %d",CLIENT_RECONNECT_DURATION, ++counter);
 		sleep(CLIENT_RECONNECT_DURATION);
 			
 	}	
@@ -563,7 +560,8 @@ void client_process(void)
 	int res = -1;
 	struct timeval tv;
 	u8 alarm_in[ALARM_MAX];	
-	
+
+	sys_log(FUNC, LOG_MSG, "start");
 	while (1)
 	{			
 		heartbeat_timeout ++;
@@ -579,7 +577,7 @@ void client_process(void)
 			}			
 		}
 		if (g_sockfd_client <=0){
-			sys_log(FUNC, LOG_WARN, "g_sockfd_client");
+			//sys_log(FUNC, LOG_WARN, "g_sockfd_client");
 			g_reconnect_flag = RECONNECT_ON;
 			continue;
 		}	

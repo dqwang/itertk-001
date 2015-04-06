@@ -27,7 +27,7 @@ static void web_svr_start(void)
 	    int sndlen;
 
 	g_listen_conn = socket(AF_INET, SOCK_STREAM, 0);
-	sys_log(FUNC, LOG_DBG, "[sock_fd %d]socket\n",g_listen_conn);
+	
 	if (g_listen_conn == -1){
 		perror("web_svr_start: socket");
 		return;
@@ -70,7 +70,7 @@ static void web_svr_start(void)
 		//return;
 		sleep(3);
 	}
-	sys_log(FUNC, LOG_DBG, "[sock_fd %d]bind...\n",g_listen_conn);
+	
 	
 	if (listen(g_listen_conn, MAX_TCP_CONN) == -1){
 		perror("web_svr_start: listen");
@@ -78,10 +78,10 @@ static void web_svr_start(void)
 
 		return;
 	}
-	sys_log(FUNC, LOG_DBG, "[sock_fd %d]listen...\n",g_listen_conn);
+	
 	m_max_sock = g_listen_conn;
 	
-	sys_log(FUNC, LOG_DBG, "APP Server start ...WEB_PORT :%d\n", WEB_PORT);
+	sys_log(FUNC, LOG_DBG, "APP Server start , WEB_PORT :%d\n", WEB_PORT);
 }
 
 void web_init(void)
@@ -480,13 +480,13 @@ int sys_vlan_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 
 int sys_factory_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 {
-	char strcmd[64]="";
-	sprintf(strcmd, "rm %s", CONFIG_FILE);
-	sys_log(FUNC, LOG_MSG, "[%s]\n", strcmd);
-	system(strcmd);
-	config_init();
+	sys_log(FUNC, LOG_MSG, "reconfig");	
+
+	reconfig(&g_conf_info);
+	config_net_set(&g_conf_info.con_net);
 	return FACTORY_SET_OK;
-}
+	
+	}
 
 extern void com_set(CONFIG_COM *con_com);
 
@@ -851,7 +851,7 @@ void web_process(void)
 	static fd_set m_readfds;        //! set of read socket handles
 	// int sendlen;
 
-
+	sys_log(FUNC, LOG_MSG, "start");
 	FD_ZERO(&m_readfds);
 
 	if (g_listen_conn > 0){

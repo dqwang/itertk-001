@@ -333,7 +333,7 @@ static void com_proc(void* arg)
 {
 	CONFIG_COM *con_com = (CONFIG_COM*)arg;	
 	char lsbuf[1024];
-	
+	sys_log(FUNC, LOG_MSG, "start");
 	while(1){
 		int len;		
 		if (rs_type  == RS232){

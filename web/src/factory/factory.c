@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include "cgic.h"
 #include "itscmd.h"
+#include <linux/reboot.h>
 
 char name[32]="";
 
@@ -69,9 +70,11 @@ int cgiMain()
 		else
 		{
 			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
-			fprintf(cgiOut, "window.alert(\"设置成功！\");\n");
-			fprintf(cgiOut, "</script>\n");		
+			fprintf(cgiOut, "window.alert(\"设置成功！设备重启，稍后请重新登录\");\n");
+			fprintf(cgiOut, "</script>\n");
+			 
 		}
+		
 	}
 	
 	fprintf(cgiOut, "<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");

@@ -41,11 +41,11 @@ enum protocol{
 
 
 
-int client_init(void);
+int client_connect_server(void);
 int client_reconnect(void);
 void client_process(void);
 void client_thread(void);
-int dns_init(char * dns_str);
+int dns_resolution(char * dns_str);
 
 
 

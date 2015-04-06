@@ -243,6 +243,7 @@ static void mode_proc(void* arg)
     socklen_t addr_len;
 static int cnt =0;
 
+	sys_log(FUNC, LOG_MSG, "start");
 AGAIN:
     if(con_mode->mode == WORK_NO || md->session->protocol == TCP_NO)
     {
@@ -432,7 +433,7 @@ int g_report_sfd=0;
 //char* sys_ip2str_static ( DWORD ip )
 
 extern void config_net_set(CONFIG_NET *pConf);
-extern int dns_init(char * dns_str);
+extern int dns_resolution(char * dns_str);
 int str2hex(const char *str)
 {
 	int i=0, tmp, result=0;
@@ -541,8 +542,8 @@ void pc_set_dev_info(char *recv_str)
 	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));	
 	config_net_set(&g_conf_info.con_net);
 	
-#if 1//if run this code, ....PC Search Tool may be failed...
-	ret=dns_init(con_server.dns_str);
+#if 1
+	ret=dns_resolution(con_server.dns_str);
 #endif	
 	config_save(&g_conf_info);
 	
@@ -599,7 +600,8 @@ void report_proc(void)
 	//char tmp[16]="";
 	
 	struct sockaddr_in servaddr;
-
+	sys_log(FUNC, LOG_MSG, "start");
+	
 	g_report_sfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (g_report_sfd < 0) {
 		sys_log(FUNC, LOG_ERR,"report socket err"); 
@@ -662,7 +664,7 @@ void report_proc(void)
 				//inet_ntop(AF_INET, peeraddr.sin_addr.s_addr, tmp, 16);
 				//sys_log(FUNC, LOG_DBG,"sendto addr: %s", tmp); 
 				
-				if (sendto	(g_report_sfd, sendmsg, strlen(sendmsg), 0,	(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) <=0) {
+				if (sendto(g_report_sfd, sendmsg, strlen(sendmsg), 0,	(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) <=0) {
 					//sys_log(FUNC, LOG_ERR,"can't sendto %s", sendmsg); 
 					perror("sendto");
 				}else{

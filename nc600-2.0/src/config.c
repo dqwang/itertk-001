@@ -8,104 +8,19 @@
 #include "cmd_def.h"
 #include "system.h"
 
-
 CONFI_DATA g_conf_info;
 void get_mac_init(void);
 
-
-
-
-void config_makedefault ( CONFI_DATA *pConf )
+/*recovery configuration except SN and MAC*/
+void reconfig(CONFI_DATA *pConf)
 {
-    
-    //系统参数
-    bzero(pConf, sizeof(CONFI_DATA));
-
-    
-    strcpy ( pConf->con_sys.host_name, PRODUCT_NAME );
-    bzero ( pConf->con_sys.host_pos, sizeof ( pConf->con_sys.host_pos ) );
-    sprintf(pConf->con_sys.sw_ver, "%s  %s  %s", PROGRAM_VERSION, __DATE__, __TIME__);
-    strcpy(pConf->con_sys.hw_ver, HW_VERSION);
-
-    
-    pConf->con_net.dev_ip = sys_str2ip ( DEVICE_IP );
-    pConf->con_net.dev_nm = sys_str2ip ( "255.255.255.0" );
-    pConf->con_net.dev_gw = sys_str2ip ( "192.168.1.1" );
-    pConf->con_net.dev_dhcp = OFF;
-    pConf->con_net.dhcp_id = 0;
-    pConf->con_net.dns[0] = sys_str2ip("192.168.1.1");
-    pConf->con_net.dns[1] = 0;
-
-
-    //串口参数
-    int i, j;
-    FOR ( i, MAX_COM_PORT )
-    {
-        pConf->con_com[i].id = i + 1;
-        pConf->con_com[i].bps = 115200;
-        pConf->con_com[i].chk = 3;  //无校验
-        pConf->con_com[i].sbit = 1;
-        pConf->con_com[i].dbit = 8;
-        pConf->con_com[i].bctrl = 0;
-        pConf->con_com[i].RTS = OFF;
-        pConf->con_com[i].DTR = OFF;
-        pConf->con_com[i].type = RS232;
-    }
-
-    //工作模式
-    FOR ( i, MAX_COM_PORT )
-    {
-        pConf->con_mode[i].id = i + 1;
-        pConf->con_mode[i].mode = WORK_NO;//
-        pConf->con_mode[i].tcp_mode = TCP_RAW;
-        pConf->con_mode[i].CR = TO_CR;
-        pConf->con_mode[i].LF = TO_LF;
-        pConf->con_mode[i].attestation = 0;
-        pConf->con_mode[i].is_null = NO;
-        pConf->con_mode[i].att = NO;
-        pConf->con_mode[i].reg = NO;
-        FOR ( j, MAX_SESSION )
-        {
-            pConf->con_mode[i].session[j].protocol = TCP_NO;//
-         //   pConf->con_mode[i].session[j].ip =sys_str2ip ( "192.168.1.88" );
-            pConf->con_mode[i].session[j].ip =0;
-            pConf->con_mode[i].session[j].lport = 0	;
-            pConf->con_mode[i].session[j].dport = 0;
-            pConf->con_mode[i].session[j].conn = 0;
-            pConf->con_mode[i].session[j].dis_conn = 0;
-            pConf->con_mode[i].session[j].time_out = 0;
-            pConf->con_mode[i].session[j].max_num = 0;
-        }
-    }
-
-    //端口权限管理
-    FOR ( i, MAX_COM_PORT )
-    {
-        pConf->con_lim[i].id = i + 1;
-        pConf->con_lim[i].enable = NO;
-        FOR(j, MAX_USR_NUM)
-        {
-            pConf->con_lim[i].read[j] = NO;
-            pConf->con_lim[i].modify[j] = NO;
-        }
-    }
-
-    //用户管理
-    FOR ( i, MAX_USR_NUM)
-    {
-        pConf->con_usr[i].usr_id = i + 1;
-        bzero(pConf->con_usr[i].usr_name, USR_NAME_LEN);
-        bzero(pConf->con_usr[i].usr_passwd, USR_PSW_LEN);
-        pConf->con_usr[i].usr_auth = USR_NORMAL;
-    }
-    strcpy((char*)pConf->con_usr[0].usr_name, "root");
-    strcpy((char*)pConf->con_usr[0].usr_passwd, crypt("123456", USR_SALT));
-    pConf->con_usr[0].usr_auth = USR_ROOT;
-
-	pConf->con_server.server_ip = sys_str2ip ( SERVER_IP );
-	pConf->con_server.server_port = SERVER_PORT;    
-	strcpy(pConf->con_server.dns_str, "www.baidu.com");
-
+	pConf->con_net.dev_ip = sys_str2ip ( DEVICE_IP );
+	pConf->con_net.dev_nm = sys_str2ip ( "255.255.255.0" );
+	pConf->con_net.dev_gw = sys_str2ip ( "192.168.1.1" );
+	pConf->con_net.dev_dhcp = OFF;
+	pConf->con_net.dhcp_id = 0;
+	pConf->con_net.dns[0] = sys_str2ip("192.168.1.1");
+	pConf->con_net.dns[1] = 0;
 
 	pConf->con_gpio.alarm_on_off[0]=1;
 	pConf->con_gpio.alarm_on_off[1]=1;
@@ -115,8 +30,65 @@ void config_makedefault ( CONFI_DATA *pConf )
 	pConf->con_gpio.alarm_on_off[5]=1;
 	pConf->con_gpio.alarm_on_off[6]=1;
 	pConf->con_gpio.alarm_on_off[7]=1;
-   
-    config_save ( pConf );
+	
+	config_save ( pConf );
+	sleep(1);
+	system("sync");
+	system("reboot");
+}
+
+void config_makedefault ( CONFI_DATA *pConf )
+{
+	int i;
+	
+	bzero(pConf, sizeof(CONFI_DATA));/*clear configuration*/
+
+	strcpy ( pConf->con_sys.host_name, PRODUCT_NAME );
+	bzero ( pConf->con_sys.host_pos, sizeof ( pConf->con_sys.host_pos ) );
+	sprintf(pConf->con_sys.sw_ver, "%s  %s  %s", PROGRAM_VERSION, __DATE__, __TIME__);
+	strcpy(pConf->con_sys.hw_ver, HW_VERSION);
+	strcpy(pConf->con_sys.host_sn, HW_SN);
+
+	pConf->con_net.dev_ip = sys_str2ip ( DEVICE_IP );
+	pConf->con_net.dev_nm = sys_str2ip ( "255.255.255.0" );
+	pConf->con_net.dev_gw = sys_str2ip ( "192.168.1.1" );
+	pConf->con_net.dev_dhcp = OFF;
+	pConf->con_net.dhcp_id = 0;
+	pConf->con_net.dns[0] = sys_str2ip("192.168.1.1");
+	pConf->con_net.dns[1] = 0;
+
+	pConf->con_net.dev_mac[0]=0x88;
+	pConf->con_net.dev_mac[1]=0x5c;
+	pConf->con_net.dev_mac[2]=0x47;
+	pConf->con_net.dev_mac[3]=0x00;
+	pConf->con_net.dev_mac[4]=0x00;
+	pConf->con_net.dev_mac[5]=0x00;
+
+
+	FOR ( i, MAX_USR_NUM){
+		pConf->con_usr[i].usr_id = i + 1;
+		bzero(pConf->con_usr[i].usr_name, USR_NAME_LEN);
+		bzero(pConf->con_usr[i].usr_passwd, USR_PSW_LEN);
+		pConf->con_usr[i].usr_auth = USR_NORMAL;
+	}
+	strcpy((char*)pConf->con_usr[0].usr_name, "root");
+	strcpy((char*)pConf->con_usr[0].usr_passwd, crypt("123456", USR_SALT));
+	pConf->con_usr[0].usr_auth = USR_ROOT;
+
+	pConf->con_server.server_ip = sys_str2ip ( SERVER_IP );
+	pConf->con_server.server_port = SERVER_PORT;    
+	strcpy(pConf->con_server.dns_str, "www.baidu.com");
+
+	pConf->con_gpio.alarm_on_off[0]=1;
+	pConf->con_gpio.alarm_on_off[1]=1;
+	pConf->con_gpio.alarm_on_off[2]=1;
+	pConf->con_gpio.alarm_on_off[3]=1;
+	pConf->con_gpio.alarm_on_off[4]=1;
+	pConf->con_gpio.alarm_on_off[5]=1;
+	pConf->con_gpio.alarm_on_off[6]=1;
+	pConf->con_gpio.alarm_on_off[7]=1;
+
+	config_save ( pConf );
 }
 
 void config_load ( CONFI_DATA *pConf )
@@ -141,57 +113,35 @@ void config_net_set(CONFIG_NET *pConf)
 	char cmd[64] = "";
 	char ip[16],nm[16];
 
-	sys_log ( FUNC, LOG_WARN, "%s", "--------1------");
-
 	strcpy(ip,sys_ip2str_static(pConf->dev_ip));
 	strcpy(nm,sys_ip2str_static(pConf->dev_nm));
 	
 	sprintf(cmd, "ifconfig eth0 %s netmask %s", ip, nm);
-
-	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
-	system(cmd);
-	sys_log ( FUNC, LOG_WARN, "%s", "--------2------");
+	system(cmd);	
 	sprintf(cmd, "ifconfig eth0 hw ether %02x:%02x:%02x:%02x:%02x:%02x",\
 			 pConf->dev_mac[0], pConf->dev_mac[1], pConf->dev_mac[2],\
-		 	pConf->dev_mac[3],  pConf->dev_mac[4], pConf->dev_mac[5]);
-	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
+		 	pConf->dev_mac[3],  pConf->dev_mac[4], pConf->dev_mac[5]);	
 	system(cmd);
-	sys_log ( FUNC, LOG_WARN, "%s", "--------3------");
-	/*
-	sprintf(cmd, "route add -net 224.0.0.0 netmask 224.0.0.0 dev eth0");
-	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
-	system(cmd);
-	*/
-
-	
 
 	sprintf(cmd, "route add -host 255.255.255.255 dev eth0");
-	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-	sys_log ( FUNC, LOG_WARN, "%s", "--------4------");
-	
 	sprintf(cmd, "route add default gw %s eth0", sys_ip2str_static(pConf->dev_gw));
-	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-	sys_log ( FUNC, LOG_WARN, "%s", "--------5------");
 	sprintf(cmd, "route add -net 192.168.102.0/24 gw 172.16.136.251");
-	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-	sys_log ( FUNC, LOG_WARN, "%s", "--------6------");
 	sprintf(cmd, "route");
-	sys_log(FUNC, LOG_MSG, " [%s]", cmd);
 	system(cmd);
-	sys_log ( FUNC, LOG_WARN, "%s", "--------7------");
+	sys_log ( FUNC, LOG_MSG, "Done");
 
 }
 
 void config_init ( void )
 {
 	if ( file_is_existed ( CONFIG_FILE ) == 0 )	{
-		sys_log(FUNC, LOG_WARN, "Generate default configuration");
+		sys_log(FUNC, LOG_WARN, "Generated default configuration");
 		config_makedefault ( &g_conf_info );
 	} else {
-		sys_log(FUNC, LOG_WARN, "Load configuration %s", CONFIG_FILE);
+		sys_log(FUNC, LOG_MSG, "Load configuration %s", CONFIG_FILE);
 		config_load ( &g_conf_info );
 	}
 	
@@ -316,17 +266,25 @@ void get_mac_init(void)
 	
 	{
 		int j;
-		printf("HWADDR :	");
-		for (j=0;j<6;j++)
-			printf("%02x ", struReq.ifr_hwaddr.sa_data[j]);
+		printf("Device MAC :		");
+		for (j=0;j<6;j++){
+			printf("%02x", struReq.ifr_hwaddr.sa_data[j]);
+			if (j<5){
+				printf(":");
+			}
+		}
 		printf("\n");
 		
 		memcpy(g_conf_info.con_net.dev_mac, struReq.ifr_hwaddr.sa_data, sizeof(g_conf_info.con_net.dev_mac));
 
 		
-		printf("g_conf_info mac :	");
-		for (j=0;j<6;j++)
-			printf("%02x ", g_conf_info.con_net.dev_mac[j]);
+		printf("Config MAC :		");
+		for (j=0;j<6;j++){
+			printf("%02x", g_conf_info.con_net.dev_mac[j]);
+			if (j<5){
+				printf(":");
+			}
+		}
 		printf("\n");
 	}
 	
