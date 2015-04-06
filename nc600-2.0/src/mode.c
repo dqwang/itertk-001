@@ -460,25 +460,23 @@ void pc_set_dev_info(char *recv_str)
 {
 	char* p = strtok(recv_str, "|");
 	char *q;
+	char mac[20]="";
 	CONFIG_NET conf_net;
 	CONFIG_SERVER con_server;
+	CONFIG_SYS con_sys;
 	int ret=-1;
-	
-	//g_conf_info.con_net
-	//g_conf_info.con_server
-	
-	if(p){
-		printf("%s\n",p);
 		
+	if(p){
+		printf("%s\n",p);		
 		if (g_conf_info.con_net.dev_ip != sys_str2ip(p)){
 			sys_log(FUNC,LOG_ERR, "%s","NOT ME");
 			return;
-		}
-		
+		}		
 	}
 
 	memcpy(&conf_net, &g_conf_info.con_net, sizeof(CONFIG_NET));
 	memcpy(&con_server, &g_conf_info.con_server, sizeof(CONFIG_SERVER));
+	memcpy(&con_sys, &g_conf_info.con_sys, sizeof(CONFIG_SERVER));
 	
 	p = strtok(NULL, "|");
 	if(p){
@@ -524,10 +522,21 @@ void pc_set_dev_info(char *recv_str)
 	}	
 	p = strtok(NULL, "|");
 	if(p){
-		unsigned char i=0;
-		printf("%s\n",p);
 		
-		q=strtok(p, ":");
+		printf("%s\n",p);
+		strcpy(mac, p);			
+		/*mac*/
+	}
+	p = strtok(NULL, "|");
+	if (p){
+		printf("%s\n", p);
+		strcpy(con_sys.host_sn, p);		
+	}
+
+	/*mac here*/
+	{
+		unsigned char i=0;
+		q=strtok(mac, ":");
 		conf_net.dev_mac[i++]=str2hex(q);
 		while(q){
 			q=strtok(NULL, ":");
@@ -536,20 +545,19 @@ void pc_set_dev_info(char *recv_str)
 			}else{
 				break;
 			}			
-		}		
+		}	
 	}
+	
+	
 	memcpy(&g_conf_info.con_net, &conf_net, sizeof(CONFIG_NET));	
 	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));	
-	config_net_set(&g_conf_info.con_net);
-	
-#if 1
+	config_net_set(&g_conf_info.con_net);	
 	ret=dns_resolution(con_server.dns_str);
-#endif	
+
+	memcpy(&g_conf_info.con_sys, &con_sys, sizeof(CONFIG_SYS));	
 	config_save(&g_conf_info);
 	
 	system("reboot");
-	
-
 }
 
 
@@ -564,6 +572,7 @@ void pc_get_dev_info(char *info)
 //	char dev_serverip[16]="";
 	char dev_dns_str[50]="";
 	char dev_mac[18]="";
+	char dev_sn[32]="";
 
 	strcpy(dev_ip, sys_ip2str_static(g_conf_info.con_net.dev_ip));
 	strcpy(dev_nm, sys_ip2str_static(g_conf_info.con_net.dev_nm));
@@ -576,14 +585,12 @@ void pc_get_dev_info(char *info)
 	sprintf(dev_mac, "%02x:%02x:%02x:%02x:%02x:%02x",\
 			 g_conf_info.con_net.dev_mac[0], g_conf_info.con_net.dev_mac[1], g_conf_info.con_net.dev_mac[2],\
 		 	g_conf_info.con_net.dev_mac[3],  g_conf_info.con_net.dev_mac[4], g_conf_info.con_net.dev_mac[5]);
+	strcpy(dev_sn, g_conf_info.con_sys.host_sn);
 	
-	sprintf(info, "%s|%s|%s|%s|%s|%s|%d|%s|%s", dev_ip, dev_nm, dev_gw, dev_dns1, dev_dns2, dev_dns_str,\
-							g_conf_info.con_server.server_port,dev_mac,PROGRAM_VERSION);
+	sprintf(info, "%s|%s|%s|%s|%s|%s|%d|%s|%s|%s", dev_ip, dev_nm, dev_gw, dev_dns1, dev_dns2, dev_dns_str,\
+							g_conf_info.con_server.server_port,dev_mac,PROGRAM_VERSION, dev_sn);
 	
-}
-
-
-	
+}	
 
 void report_proc(void)
 {
