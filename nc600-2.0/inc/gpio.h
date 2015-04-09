@@ -43,8 +43,8 @@ void get_alarm(u8 alarm_in[]);
 #define LED_OFF GS_HIGH
 void led_ctrl(gpio_num led, unsigned char on_off);
 
-#define ALARM_ON GS_LOW
-#define ALARM_OFF GS_HIGH
+#define ALARM_ON 1 /**/
+#define ALARM_OFF 0
 
 #define ALARM_LED_FLAG_ON 1
 #define ALARM_LED_FLAG_OFF 0
@@ -62,6 +62,8 @@ enum {
 	ALARM_MAX = 8
 	
 };
+
+#define ALARM_DURATION 3
 
 
 

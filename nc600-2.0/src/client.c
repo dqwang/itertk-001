@@ -14,6 +14,7 @@
 #include <errno.h>
 
 
+extern u8 g_alarm_in[ALARM_MAX];
 
 u8 heartbeat_s =HEARTBEAT_TIMEOUT;
 u16 heartbeat_timeout = 0;/*FIX BUG001:*/
@@ -559,7 +560,6 @@ void client_process(void)
 	int num_to_send;	
 	int res = -1;
 	struct timeval tv;
-	u8 alarm_in[ALARM_MAX];	
 
 	sys_log(FUNC, LOG_MSG, "start");
 	while (1)
@@ -638,9 +638,8 @@ void client_process(void)
 			case PROTOCOL_GET_ALARM_STATUS:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_ALARM_STATUS");
 				if(!check_for_get_alarm_status(buf,num_read_from_socket))
-				{
-					get_alarm(alarm_in);					
-					num_to_send = make_ack_get_alarm_status(buf_send,alarm_in);
+				{					
+					num_to_send = make_ack_get_alarm_status(buf_send, g_alarm_in);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
 					if(ret != num_to_send) 
 						printf("write socket error!\n");
