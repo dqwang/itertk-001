@@ -84,77 +84,6 @@ err:
 	return -1;	
 }
 
-
-
-
-
-#if 1
-#define GPIO_TOTAL 13
-unsigned char g_gpio_num[GPIO_TOTAL]={ALARM_IN1, ALARM_IN2, ALARM_IN3, ALARM_IN4, ALARM_IN5, ALARM_IN6,\
-					     ALARM_IN7, ALARM_IN8, CFG_KEY, LED_D1_SYSTEM_STATUS, LED_D2_ALARM_STATUS, \
-					     LED_D3_ALARM_SERVER_STATUS, PHY_RESET };
-unsigned char g_gpio_dir[GPIO_TOTAL]={GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, \
-						                   GD_IN, GD_OUT,GD_OUT,GD_OUT,GD_OUT};
-
-unsigned char g_gpio_status[GPIO_TOTAL]={GS_HIGH, GS_HIGH, GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,\
-								        GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH};
-int open_gpio(void)
-{
-	FILE *fp = NULL;
-	char path[64] = "";
-	unsigned char i=0;
-
-	sys_log(FUNC, LOG_MSG, "start");
-	
-	pthread_mutex_lock(&gpio_mutex);
-	
-	for (i=0; i<GPIO_TOTAL; i++){
-		fp = fopen("/sys/class/gpio/export","w");
-		if (NULL == fp)
-			goto err;
-		fprintf(fp, "%d", g_gpio_num[i]);
-		fclose(fp);
-	}
-	
-	for (i=0; i<GPIO_TOTAL; i++){
-		sprintf(path, "/sys/class/gpio/gpio%d/direction", g_gpio_num[i]);
-		fp = fopen(path,"w");
-		if (NULL == fp)
-			goto err;
-		fprintf(fp, ((g_gpio_dir[i]== GD_IN)? "in":"out"));	
-		fclose(fp);
-	}
-	sys_log(FUNC, LOG_MSG, "ok");
-	pthread_mutex_unlock(&gpio_mutex);
-	return 0;
-err:
-	printf(" open_gpio()  error!\n");
-	pthread_mutex_unlock(&gpio_mutex);
-	return -1;	
-}
-int close_gpio(void)
-{
-	FILE *fp = NULL;
-	unsigned char i=0;
-
-	
-	pthread_mutex_lock(&gpio_mutex);
-	
-	for (i=0;i<GPIO_TOTAL;i++){
-		fp = fopen("/sys/class/gpio/unexport","w");
-		if (NULL == fp)
-			goto err;
-		fprintf(fp, "%d", g_gpio_num[i]);
-		fclose(fp);
-	}	
-	pthread_mutex_unlock(&gpio_mutex);
-err:
-	printf(" close_gpio()  error!\n");
-	pthread_mutex_unlock(&gpio_mutex);
-	return -1;	
-}
-
-
 int set_gpio(gpio_num gn, gpio_dir gd, gpio_status gs)
 {
 	FILE *fp = NULL;
@@ -211,62 +140,7 @@ err:
 }
 
 #else
-int set_gpio(gpio_num gn, gpio_dir gd, gpio_status gs)
-{
-	FILE *fp = NULL;
-	char path[64] = "";
 
-	pthread_mutex_lock(&gpio_mutex);
-		
-	sprintf(path, "/sys/class/gpio/gpio%d/value", gn);
-	fp = fopen(path, "w");
-	if (NULL == fp)
-		goto err;
-	fprintf(fp, "%d", gs);
-	fclose(fp);		
-	
-	pthread_mutex_unlock(&gpio_mutex);
-	return 0;
-err:
-	printf(" set_gpio()  error!\n");
-	pthread_mutex_unlock(&gpio_mutex);
-	return -1;
-}
-
-int get_gpio(gpio_num gn, gpio_status *gsP)
-{
-	FILE *fp = NULL;
-	char path[64] = "";
-	int ret;
-	
-	pthread_mutex_lock(&gpio_mutex);
-	if (NULL == gsP)
-		goto err;	
-
-	sprintf(path, "/sys/class/gpio/gpio%d/value", gn);
-	fp = fopen(path, "r");
-	if (NULL == fp)
-		goto err;
-#define SIZE 1
-#define CNT 1
-	ret = fread(gsP, SIZE, CNT, fp);
-	if (ret != CNT)
-		goto err;
-	*gsP -= 0x30;/*ascii to int*/
-	fclose(fp);
-	
-	pthread_mutex_unlock(&gpio_mutex);
-	return 0;
-err:
-	printf(" get_gpio() args error!\n");
-	if (NULL != fp){
-		fclose(fp);
-	}
-	pthread_mutex_unlock(&gpio_mutex);
-	return -1;
-}
-
-#else
 int set_gpio(gpio_num gn, gpio_dir gd, gpio_status gs)
 {
 	FILE *fp = NULL;
@@ -463,30 +337,6 @@ void get_alarm(u8 alarm_in[])
 
 }
 
-u8 is_alarm(u8 alarm_in[])
-{
-	u8 i=0;
-	u8 alarm_state = ALARM_OFF;
-	
-	get_alarm(alarm_in);
-		
-	for (i=0; i<ALARM_MAX;i++){
-		if (alarm_in[i] == ALARM_ON){			
-			alarm_state = ALARM_ON;
-			led_ctrl(LED_D2_ALARM_STATUS, LED_ON);			
-			g_alarm_led_flag = ALARM_LED_FLAG_ON;
-			return alarm_state;
-		}
-	}
-	
-	if (g_alarm_led_flag == ALARM_LED_FLAG_ON){
-		led_ctrl(LED_D2_ALARM_STATUS, LED_OFF);
-		g_alarm_led_flag = ALARM_LED_FLAG_OFF;
-	}	
-	return alarm_state;
-}
-
-
 #endif
 
 
@@ -609,25 +459,12 @@ int init_gpio(void)
 	TRD_t gpio_trd;
 
 	pthread_mutex_init (&gpio_mutex, NULL);
-<<<<<<< HEAD
+
 #if GPIO_FLAG	
  	open_gpio();
 #endif	
 
-	init_alarm();
-=======
-	
- 	open_gpio();
-
- 	set_gpio(ALARM_IN1, GD_IN, GS_HIGH);
-	set_gpio(ALARM_IN2, GD_IN, GS_HIGH);
-	set_gpio(ALARM_IN3, GD_IN, GS_HIGH);
-	set_gpio(ALARM_IN4, GD_IN, GS_HIGH);
-	set_gpio(ALARM_IN5, GD_IN, GS_HIGH);
-	set_gpio(ALARM_IN6, GD_IN, GS_HIGH);
-	set_gpio(ALARM_IN7, GD_IN, GS_HIGH);
-	set_gpio(ALARM_IN8, GD_IN, GS_HIGH);
->>>>>>> 9b9b1f11774dce65851cc77d668fe91e33433a1b
+	init_alarm();	
 
  	set_gpio(PHY_RESET,  GD_OUT,  GS_HIGH);	
 
@@ -637,12 +474,8 @@ int init_gpio(void)
 
    	set_gpio(CFG_KEY, GD_IN, GS_HIGH);
 
-<<<<<<< HEAD
-	trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
-=======
-	//trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
 
->>>>>>> 9b9b1f11774dce65851cc77d668fe91e33433a1b
+	trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
  	trd_create(&gpio_trd, (void*)&system_run_proc, NULL);
 	trd_create(&gpio_trd, (void*)&cfg_key_proc, NULL);
 	
