@@ -17,9 +17,11 @@
 #define SERVER_PORT	8888
 //#define SERVER_IP "192.168.1.100"
 #define SERVER_IP ""
+//#define SERVER_DNS "www.baidu.com"
+#define SERVER_DNS "192.168.1.108"
 
 #define DEVICE_IP "192.168.1.166"
-#define HOST_SN "DD-RTNS8S-ZxxxxA"
+#define HW_SN "DD-RTNS8S-XX****X"
 
 typedef struct tagCONFIG_SYS
 {

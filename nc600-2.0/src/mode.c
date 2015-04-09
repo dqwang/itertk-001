@@ -548,7 +548,6 @@ void pc_set_dev_info(char *recv_str)
 		}	
 	}
 	
-	
 	memcpy(&g_conf_info.con_net, &conf_net, sizeof(CONFIG_NET));	
 	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));	
 	config_net_set(&g_conf_info.con_net);	

@@ -8,7 +8,7 @@ cp /home/jack/n32926/bsp/tftp/start/nand1-2/app/bin/app /home/jack/n32926/bsp/tf
 
 cp /home/jack/n32926/bsp/tftp/start/nand1-2/app/web/*.html  /home/jack/n32926/bsp/tftp/update/nand1-2/app/web/
 
-cp  /home/jack/n32926/bsp/tftp/start/nand1-2/app/web/cgi-bin/server.cgi /home/jack/n32926/bsp/tftp/update/nand1-2/app/web/cgi-bin/
+cp  /home/jack/n32926/bsp/tftp/start/nand1-2/app/web/cgi-bin/*.cgi /home/jack/n32926/bsp/tftp/update/nand1-2/app/web/cgi-bin/
 
 
 date > /home/jack/n32926/bsp/tftp/update/nand1-2/update_history
@@ -25,6 +25,7 @@ mv nand1-2.tar.gz /home/jack/n32926/bsp/itertk-001/update
 pwd
 echo "-------------------------"
 echo "Create nand1-2.tar.gz: ok"
+echo "Here is the Update package: /home/jack/n32926/bsp/itertk-001/update/nand1-2.tar.gz"
 echo "::::::::::::::::::::::::)"
 
 
