@@ -29,6 +29,6 @@ echo "Here is the Update package: /home/jack/n32926/bsp/itertk-001/update/nand1-
 echo "::::::::::::::::::::::::)"
 
 
-
+cp /home/jack/n32926/bsp/itertk-001/update/nand1-2.tar.gz /home/jack/n32926/bsp/tftp/
 
 

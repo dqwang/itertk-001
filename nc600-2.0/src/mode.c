@@ -456,6 +456,31 @@ int str2hex(const char *str)
 	return result;
  }
 
+void update(char * recmsg)
+{
+	char *tftp_server_ip;
+	char cmd[64];
+
+	char* p = strtok(recmsg, "|");
+	if (p){
+		printf("%s\n",p);
+	}
+	p = strtok(NULL, "|");
+	if(p){
+		printf("%s\n",p);
+		strcpy(tftp_server_ip, p);
+	}
+	
+	sprintf(cmd, "/usr/bin/tftp -r nand1-2.tar.gz %s -g", tftp_server_ip);
+	system(cmd);
+
+	system("/bin/tar -xzf  nand1-2.tar.gz  -C /mnt/nand1-2/");
+	//system("rm -f nand1-2.tar.gz");
+	sys_log(FUNC,LOG_WARN, "%s","update OK, rebooting....");
+	sleep(3);
+	system("reboot");
+}
+
 void pc_set_dev_info(char *recv_str)
 {
 	char* p = strtok(recv_str, "|");
@@ -465,7 +490,7 @@ void pc_set_dev_info(char *recv_str)
 	CONFIG_SERVER con_server;
 	CONFIG_SYS con_sys;
 	int ret=-1;
-		
+			
 	if(p){
 		printf("%s\n",p);		
 		if (g_conf_info.con_net.dev_ip != sys_str2ip(p)){
@@ -547,7 +572,8 @@ void pc_set_dev_info(char *recv_str)
 			}			
 		}	
 	}
-	
+
+	/*config*/
 	memcpy(&g_conf_info.con_net, &conf_net, sizeof(CONFIG_NET));	
 	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));	
 	config_net_set(&g_conf_info.con_net);	
@@ -555,6 +581,8 @@ void pc_set_dev_info(char *recv_str)
 
 	memcpy(&g_conf_info.con_sys, &con_sys, sizeof(CONFIG_SYS));	
 	config_save(&g_conf_info);
+	/*update*/
+
 	
 	system("reboot");
 }
@@ -677,9 +705,12 @@ void report_proc(void)
 					sys_log(FUNC, LOG_DBG,"send ack packet %s", sendmsg); 
 				}				
 			}else{
-				/*TODO: 解析，比对，设置*/
-
-				pc_set_dev_info(recmsg);
+				if(strstr(recmsg, "update") != NULL){
+					update(recmsg);
+				}else{
+					pc_set_dev_info(recmsg);
+				}
+				
 			}			
 		}
 	}

@@ -366,24 +366,23 @@ void alarm_proc(void)
 				alarm_off_count[i]++;
 			}
 			if (g_alarm_in[i] == ALARM_ON){
-				time[i]++;
-				if (time[i] >=ALARM_TIME){
-					time[i]=0;
-					if (alarm_off_count[i]>=ALARM_OFF_TIMEOUT){
-						g_alarm_in[i] = ALARM_OFF;
-					}
+				if (alarm_off_count[i]>=ALARM_OFF_TIMEOUT){
+					g_alarm_in[i] = ALARM_OFF;
 				}
 			}	
 			//printf("%d ", g_alarm_in[i]);
 		}
 		//printf("\n");
+
+		get_alarm(alarm_init);
 		usleep(ALARM_CYCLE*1000);
+		/*		
 		t++;
 		if(t>=ALARM_TIME){
 			t=0;
 			get_alarm(alarm_init);
 		}
-
+		*/
 		
 	}
 	
