@@ -15,7 +15,7 @@ static int g_listen_conn = -1;	//! server listening socket
 static int m_max_sock = -1;		//! max socket handle
 
 extern int g_reconnect_flag;
-
+extern u8 g_alarm_in[ALARM_MAX];
 
 int net_conn_send(NET_CONN_INFO *conn_info, ITSIP *net_head, BYTE* net_data, DWORD len);
 
@@ -385,24 +385,10 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
   case CONF_GPIO:
 	{
 	  	CONFIG_GPIO mygpio;
-		gpio_status alarm;
-		get_gpio(ALARM_IN1,&alarm);
-		mygpio.alarm[0] = alarm;
-		get_gpio(ALARM_IN2,&alarm);
-		mygpio.alarm[1] = alarm;		
-		get_gpio(ALARM_IN3,&alarm);
-		mygpio.alarm[2] = alarm;
-		get_gpio(ALARM_IN4,&alarm);
-		mygpio.alarm[3] = alarm;
-		get_gpio(ALARM_IN5,&alarm);
-		mygpio.alarm[4] = alarm;
-		get_gpio(ALARM_IN6,&alarm);
-		mygpio.alarm[5] = alarm;
-		get_gpio(ALARM_IN7,&alarm);
-		mygpio.alarm[6] = alarm;
-		get_gpio(ALARM_IN8,&alarm);
-		mygpio.alarm[7] = alarm;
-
+		for (i=0;i<8;i++){
+			mygpio.alarm[i]=g_alarm_in[i];
+		}
+		
 		for (i=0;i<8;i++){
 			mygpio.alarm_on_off[i] = g_conf_info.con_gpio.alarm_on_off[i];
 		}		

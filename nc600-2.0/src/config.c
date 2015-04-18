@@ -31,7 +31,7 @@ void reconfig(CONFI_DATA *pConf)
 	pConf->con_gpio.alarm_on_off[6]=1;
 	pConf->con_gpio.alarm_on_off[7]=1;
 
-   pConf->con_server.server_ip = sys_str2ip ( SERVER_IP );
+   	pConf->con_server.server_ip = sys_str2ip ( SERVER_IP );
 	pConf->con_server.server_port = SERVER_PORT;    
 	strcpy(pConf->con_server.dns_str, SERVER_DNS);
 	
