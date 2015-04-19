@@ -340,8 +340,7 @@ void get_alarm(u8 alarm_in[])
 #endif
 
 #define ALARM_CYCLE 100//ms
-#define ALARM_TIME 50 /*50*100ms*/
-#define ALARM_OFF_TIMEOUT 600/*1 min*/
+#define ALARM_OFF_TIMEOUT 300/*30s*/
 #if 1
 void alarm_proc(void)
 {
@@ -354,6 +353,7 @@ void alarm_proc(void)
 
 	memset(time, 0, sizeof(time));
 	get_alarm(alarm_init);	
+	usleep(ALARM_CYCLE*1000);
 	while (1)
 	{
 		get_alarm(alarm_update);
@@ -374,15 +374,10 @@ void alarm_proc(void)
 		}
 		//printf("\n");
 
-		get_alarm(alarm_init);
+		//get_alarm(alarm_init);
+		memcpy(alarm_init, alarm_update, sizeof(alarm_update));
 		usleep(ALARM_CYCLE*1000);
-		/*		
-		t++;
-		if(t>=ALARM_TIME){
-			t=0;
-			get_alarm(alarm_init);
-		}
-		*/
+		
 		
 	}
 	
