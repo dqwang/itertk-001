@@ -486,11 +486,12 @@ void pc_set_dev_info(char *recv_str)
 	char* p = strtok(recv_str, "|");
 	char *q;
 	char mac[20]="";
+	char mac_id[20]="";
 	CONFIG_NET conf_net;
 	CONFIG_SERVER con_server;
 	CONFIG_SYS con_sys;
 	int ret=-1;
-			
+#if 0			
 	if(p){
 		printf("%s\n",p);		
 		if (g_conf_info.con_net.dev_ip != sys_str2ip(p)){
@@ -498,6 +499,22 @@ void pc_set_dev_info(char *recv_str)
 			return;
 		}		
 	}
+#else
+	if(p){
+		sprintf(mac_id, "%02x:%02x:%02x:%02x:%02x:%02x",\
+			 g_conf_info.con_net.dev_mac[0], g_conf_info.con_net.dev_mac[1], g_conf_info.con_net.dev_mac[2],\
+		 	g_conf_info.con_net.dev_mac[3],  g_conf_info.con_net.dev_mac[4], g_conf_info.con_net.dev_mac[5]);
+		sys_log(FUNC,LOG_DBG, "%s",mac_id);
+		printf("%s\n",p);		
+		
+		
+		if (strcmp(mac_id, p) != 0){
+			sys_log(FUNC,LOG_ERR, "%s","NOT ME");
+			return;
+		}		
+	}
+#endif
+	
 
 	memcpy(&conf_net, &g_conf_info.con_net, sizeof(CONFIG_NET));
 	memcpy(&con_server, &g_conf_info.con_server, sizeof(CONFIG_SERVER));

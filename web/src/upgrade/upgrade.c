@@ -188,19 +188,26 @@ int cgiMain()
 			
 			
 			
-			system("rm -f /mnt/nand1-2/update.tar.gz");
+			//system("rm -f /mnt/nand1-2/update.tar.gz");
 			
+			
+			
+
+			sleep(20);
+
+		
 			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
-			//fprintf(cgiOut, "window.setTimeout(function(){top.window.location.href=\"../login.html\"},000)\n");
-			fprintf(cgiOut, "window.alert(\"升级成功，重启系统\");\n");
+		
+			fprintf(cgiOut, "window.alert(\"升级成功,正在重启\");\n");		
+			
 			fprintf(cgiOut, "top.window.location.href=\"../login.html\";\n");
 			
-		
 			fprintf(cgiOut, "</script>\n");
 			fprintf(cgiOut, "</body>\n");
+
+
 			
-						
-			//return 1;
+			return 1;
 		}
 		else
 		{
@@ -212,7 +219,7 @@ int cgiMain()
 			return 1;
 		}
 
-		
+	
 	}
 	else if(cgiFormSubmitClicked("reboot") == cgiFormSuccess)
 	{
@@ -278,12 +285,14 @@ void showmain(int flag)
 	fprintf(cgiOut, "                <tr>\n");
 	if(flag == 1)		
 		fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">升级文件名称：</td>\n");
-	else
+	else if (flag ==0)
 		fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">正在升级</td>\n");
+	else if (flag ==3)
+		fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">升级成功,正在重启...</td>\n");
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
-	if(flag == 0)
+	if(flag == 0 ||flag ==3)
 		fprintf(cgiOut, "                  <td height=\"30\"><img src=\"../images/loading11.gif\"></td>\n");
-	else
+	else 
 		fprintf(cgiOut, "                  <td height=\"30\"><input type=\"file\" name=\"upfile\" /></td>\n");
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
@@ -313,8 +322,10 @@ void showmain(int flag)
 	fprintf(cgiOut, "    <td background=\"../images/mail_rightbg.gif\"><img src=\"../images/buttom_right2.gif\" width=\"16\" height=\"17\" /></td>\n");
 	fprintf(cgiOut, "  </tr>\n");
 	fprintf(cgiOut, "</table>\n");
-	if(flag == 1)
+	if(flag == 1 ||flag==3)
 		fprintf(cgiOut, "</body>\n");
+
+	
 	
 }
 
