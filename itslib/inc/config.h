@@ -27,7 +27,7 @@
 #define USR_NAME_LEN    24
 #define USR_PSW_LEN     24
 #define USR_SALT        "NC616"
-#define MAX_COM_PORT    16
+#define MAX_COM_PORT    2
 #define MAX_SESSION     6
 #define MAX_USR_NUM     16
 /**    本类的功能：打印错误信息
@@ -127,6 +127,7 @@ typedef struct tagCONFIG_GPIO
 {
     int alarm[8];
     char alarm_on_off[8];
+	char output[3];
 }CONFIG_GPIO;
 
 

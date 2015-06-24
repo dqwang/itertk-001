@@ -54,7 +54,8 @@ enum ITS_CMD
 	ITS_FACTORY_SET		= 0xc4,
 	ITS_SERVER_QUERY		=0xc5,
 	ITS_SERVER_SET		=0xc6,
-
+	ITS_GPIO_QUERY	=0xc7,
+	ITS_GPIO_SET	=0xc8,
 	/*! \note command definitions of ACK
 	*/
 	ITS_ACK_LOGIN         = 0xb0,/*!< ACK for user Login */
@@ -80,6 +81,9 @@ enum ITS_CMD
 	ITS_ACK_FACTORY_SET		= 0xd4,
 	ITS_ACK_SERVER_QUERY		=0xd5,
 	ITS_ACK_SERVER_SET		=0xd6,
+
+	ITS_ACK_GPIO_QUERY	=0xd7,
+	ITS_ACK_GPIO_SET	=0xd8,
 };
 
 

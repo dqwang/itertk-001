@@ -43,7 +43,7 @@ void reconfig(CONFI_DATA *pConf)
 
 void config_makedefault ( CONFI_DATA *pConf )
 {
-	int i;
+	 int i, j;
 	
 	bzero(pConf, sizeof(CONFI_DATA));/*clear configuration*/
 
@@ -69,6 +69,59 @@ void config_makedefault ( CONFI_DATA *pConf )
 	pConf->con_net.dev_mac[5]=0x00;
 
 
+	  //串口参数
+   
+    FOR ( i, MAX_COM_PORT )
+    {
+        pConf->con_com[i].id = i + 1;
+        pConf->con_com[i].bps = 115200;
+        pConf->con_com[i].chk = 3;  //无校验
+        pConf->con_com[i].sbit = 1;
+        pConf->con_com[i].dbit = 8;
+        pConf->con_com[i].bctrl = 0;
+        pConf->con_com[i].RTS = OFF;
+        pConf->con_com[i].DTR = OFF;
+        pConf->con_com[i].type = RS232;
+    }
+
+    //工作模式
+    FOR ( i, MAX_COM_PORT )
+    {
+        pConf->con_mode[i].id = i + 1;
+        pConf->con_mode[i].mode = WORK_NO;//
+        pConf->con_mode[i].tcp_mode = TCP_RAW;
+        pConf->con_mode[i].CR = TO_CR;
+        pConf->con_mode[i].LF = TO_LF;
+        pConf->con_mode[i].attestation = 0;
+        pConf->con_mode[i].is_null = NO;
+        pConf->con_mode[i].att = NO;
+        pConf->con_mode[i].reg = NO;
+        FOR ( j, MAX_SESSION )
+        {
+            pConf->con_mode[i].session[j].protocol = TCP_NO;//
+         //   pConf->con_mode[i].session[j].ip =sys_str2ip ( "192.168.1.88" );
+            pConf->con_mode[i].session[j].ip =0;
+            pConf->con_mode[i].session[j].lport = 0	;
+            pConf->con_mode[i].session[j].dport = 0;
+            pConf->con_mode[i].session[j].conn = 0;
+            pConf->con_mode[i].session[j].dis_conn = 0;
+            pConf->con_mode[i].session[j].time_out = 0;
+            pConf->con_mode[i].session[j].max_num = 0;
+        }
+    }
+
+    //端口权限管理
+    FOR ( i, MAX_COM_PORT )
+    {
+        pConf->con_lim[i].id = i + 1;
+        pConf->con_lim[i].enable = NO;
+        FOR(j, MAX_USR_NUM)
+        {
+            pConf->con_lim[i].read[j] = NO;
+            pConf->con_lim[i].modify[j] = NO;
+        }
+    }
+
 	FOR ( i, MAX_USR_NUM){
 		pConf->con_usr[i].usr_id = i + 1;
 		bzero(pConf->con_usr[i].usr_name, USR_NAME_LEN);
@@ -92,6 +145,9 @@ void config_makedefault ( CONFI_DATA *pConf )
 	pConf->con_gpio.alarm_on_off[6]=1;
 	pConf->con_gpio.alarm_on_off[7]=1;
 
+	pConf->con_gpio.output[0]=1;
+	pConf->con_gpio.output[1]=1;
+	pConf->con_gpio.output[2]=1;
 	config_save ( pConf );
 }
 

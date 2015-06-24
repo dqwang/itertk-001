@@ -215,6 +215,7 @@ CMD_CODE its_conf_lim_set(char* name, CONFIG_LIMIT* con_lim);
 
 
 CMD_CODE its_conf_gpio_query(char* name, CONFIG_GPIO* con_gpio);
+CMD_CODE its_conf_gpio_set(char* name, CONFIG_GPIO* con_gpio);
 
 
 CMD_CODE its_conf_server_query(char* name, CONFIG_SERVER* con_server);

@@ -510,7 +510,7 @@ CMD_CODE its_conf_gpio_query(char* name, CONFIG_GPIO* con_gpio)
 	ITSIP_PACKET query_pak;
 	NET_CONN_INFO conn;
 
-	itsip_pack(ITS_CONF_QUERY, 0, 0, NULL, &query_pak);
+	itsip_pack(ITS_GPIO_QUERY, 0, 0, NULL, &query_pak);
 	strcpy((char*)query_pak.head.itsip_user, name);
 	query_pak.head.itsip_data[0] = CONF_GPIO;
 	if(net_conn_connect(&conn) == FAILURE)
@@ -536,6 +536,31 @@ CMD_CODE its_conf_gpio_query(char* name, CONFIG_GPIO* con_gpio)
 	return QUERY_OK;
 
 }
+
+CMD_CODE its_conf_gpio_set(char* name, CONFIG_GPIO* con_gpio)
+{
+	ITSIP_PACKET set_pak;
+	NET_CONN_INFO conn;
+	itsip_pack(ITS_GPIO_SET, sizeof(CONFIG_GPIO), 0, NULL, &set_pak);//20141209
+
+	if(net_conn_connect(&conn) == FAILURE)
+		return CONN_FAILED;
+
+	if(net_conn_send(&conn, &set_pak.head, (BYTE*)con_gpio, sizeof(CONFIG_GPIO)) == FAILURE)
+	{
+		net_conn_close(&conn);
+		return SEND_FAILED;
+	}
+
+	if(net_conn_recv(&conn, &set_pak.head, sizeof(ITSIP)) == FAILURE)
+	{
+		net_conn_close(&conn);
+		return RECV_FAILED;
+	}
+	net_conn_close(&conn);
+	return set_pak.head.itsip_data[0];
+}
+
 
 CMD_CODE its_conf_server_query(char* name, CONFIG_SERVER* con_server)
 {

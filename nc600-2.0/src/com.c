@@ -1,21 +1,3 @@
-//////////////////////////////////////////////////////////////////////////
-///    COPYRIGHT NOTICE
-///    Copyright
-///    All rights reserved.
-///
-/// @file   com.c
-/// @brief  串口处理
-///
-///
-///
-/// @version    2.0
-/// @author     xuliang<gxuliang@gmail.com>
-/// @date       2010-05-05
-///
-///
-///     修订说明：最初版本
-//////////////////////////////////////////////////////////////////////////
-
 #include "com.h"
 #include "config.h"
 #include "mode.h"
@@ -23,17 +5,10 @@
 #include "log.h"
 
 
-static int gcomfd[MAX_COM_PORT] = {0,};
+static int gcomfd[MAX_COM_PORT] = {0};
 BYTE  rs_type = RS232;//default
 pthread_mutex_t rs485_mutex;		/*rs485半双工锁*/
 
-
-//////////////////////////////////////////////////////////////////////////
-///
-///     串口打开
-///     @author     xuliang<gxuliang@gmail.com>
-///     @date       2010-05-05
-//////////////////////////////////////////////////////////////////////////
 static void com_dev_open(void)
 {
     int i;
@@ -318,7 +293,7 @@ void com_para_set(int fd, CONFIG_COM *con_com)
 		setTTY(con_com->id - 1, fd, con_com->bps,con_com->dbit, con_com->chk, con_com->sbit);
 		rs_type = con_com->type;
 
-		printf("XXX: rs_type = %d\n", rs_type);
+		sys_log(FUNC, LOG_DBG,"UART fd =%d, rs_type=%d",fd, rs_type);
 		
 	}
 }
@@ -333,7 +308,7 @@ static void com_proc(void* arg)
 {
 	CONFIG_COM *con_com = (CONFIG_COM*)arg;	
 	char lsbuf[1024];
-	sys_log(FUNC, LOG_MSG, "start");
+	sys_log(FUNC, LOG_MSG, "start fd=%d", gcomfd[con_com->id - 1]);
 	while(1){
 		int len;		
 		if (rs_type  == RS232){

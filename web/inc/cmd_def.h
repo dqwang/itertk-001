@@ -91,7 +91,10 @@ typedef enum tagCMD_CODE
 	//DNS
 	DNS_OK,
 	DNS_FAILED,
-	
+
+	//GPIO
+	GPIO_SET_OK,
+	GPIO_SET_FAILED
 }CMD_CODE;
 
 

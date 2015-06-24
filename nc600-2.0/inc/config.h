@@ -10,7 +10,7 @@
 
 #define  CONFIG_FILE CONFIG_PATH""PRODUCT_NAME".cfg"
 
-#define MAX_COM_PORT    1
+#define MAX_COM_PORT    2
 #define MAX_SESSION     6
 #define MAX_USR_NUM     16
 
@@ -115,6 +115,7 @@ typedef struct tagCONFIG_GPIO
 {
     int alarm[8];
     char alarm_on_off[8];
+	char output[3];
 }CONFIG_GPIO;
 
 

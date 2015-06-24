@@ -218,6 +218,8 @@ CMD_CODE its_conf_server_set(char* name, CONFIG_SERVER* con_server);
 
 CMD_CODE its_dns(char *www , unsigned int dns, char *ip);
 
+CMD_CODE its_conf_gpio_query(char* name, CONFIG_GPIO* con_gpio);
+CMD_CODE its_conf_gpio_set(char* name, CONFIG_GPIO* con_gpio);
 
 
 #endif

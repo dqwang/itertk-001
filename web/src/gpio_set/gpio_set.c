@@ -77,12 +77,59 @@ void show_alarm(int num)
 
 #endif
 
+void show_output1(void)
+{	
+
+	char *str[2] = {"0","1"};
+	int i;
+	fprintf(cgiOut, "                    <select name=\"output1\" style=\"width:80px\">\n");
+	for(i = 0; i < 2; i++)
+	{
+		if(i == con_gpio.output[0])
+			fprintf(cgiOut, "                      <option selected=\"selected\">%s</option>\n", str[i]);
+		else
+			fprintf(cgiOut, "                      <option>%s</option>\n", str[i]);
+	}
+	fprintf(cgiOut, "                    </select>\n");
+
+}
+
+void show_output2(void)
+{	
+
+	char *str[2] = {"0","1"};
+	int i;
+	fprintf(cgiOut, "                    <select name=\"output2\" style=\"width:80px\">\n");
+	for(i = 0; i < 2; i++)
+	{
+		if(i == con_gpio.output[1])
+			fprintf(cgiOut, "                      <option selected=\"selected\">%s</option>\n", str[i]);
+		else
+			fprintf(cgiOut, "                      <option>%s</option>\n", str[i]);
+	}
+	fprintf(cgiOut, "                    </select>\n");
+}
+
+void show_output3(void)
+{	
+
+	char *str[2] = {"0","1"};
+	int i;
+	fprintf(cgiOut, "                    <select name=\"output3\" style=\"width:80px\">\n");
+	for(i = 0; i < 2; i++)
+	{
+		if(i == con_gpio.output[2])
+			fprintf(cgiOut, "                      <option selected=\"selected\">%s</option>\n", str[i]);
+		else
+			fprintf(cgiOut, "                      <option>%s</option>\n", str[i]);
+	}
+	fprintf(cgiOut, "                    </select>\n");
+}
+
 
 #if 0
-char *str1[2] = {"开启","关闭"};
-int alarm_on_off;
-cgiFormSelectSingle("Alarm1", str1, sizeof(str1)/sizeof(str1[0]), &alarm_on_off, 0);
-con_gpio.alarm_on_off[0]= alarm_on_off;
+
+
 
 #endif
 int cgiMain()
@@ -130,11 +177,49 @@ int cgiMain()
 		fprintf(cgiOut, "<script type=\"text/javascript\">\n");
 		fprintf(cgiOut, "window.alert(\"(错误码：%d)！\");\n", ret);
 		fprintf(cgiOut, "</script>\n");		
+	}else if (cgiFormSubmitClicked("setting") == cgiFormSuccess){
+
+
+		char *str1[2] = {"0","1"};
+		int  i;/*must be int, fuck*/
+		cgiFormSelectSingle("output1", str1, sizeof(str1)/sizeof(str1[0]), &i, 0);
+		con_gpio.output[0]= i;
+
+		cgiFormSelectSingle("output2", str1, sizeof(str1)/sizeof(str1[0]), &i, 0);
+		con_gpio.output[1]= i;
+
+		cgiFormSelectSingle("output3", str1, sizeof(str1)/sizeof(str1[0]), &i, 0);
+		con_gpio.output[2]= i;
+
+		
+
+#if 0
+		its_conf_gpio_set(name,&con_gpio);
+#else
+		if (GPIO_SET_OK!=its_conf_gpio_set(name,&con_gpio)){
+	
+			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
+			fprintf(cgiOut, "window.alert(\"提交失败(错误码：%d)！\");\n", ret);
+			fprintf(cgiOut, "</script>\n");
+			
+			//提交失败后需要重新获取参数
+			bzero(&con_gpio, sizeof(con_gpio));
+			its_conf_gpio_query(name, &con_gpio);
+		}
+		else
+		{
+			//fprintf(cgiOut, "[%s][%s][%s][%s]\n", con_sys.host_name, con_sys.host_pos, con_sys.host_id, con_sys.description);
+			fprintf(cgiOut, "<script type=\"text/javascript\">\n");
+			fprintf(cgiOut, "window.alert(\"提交成功！\");\n");
+			fprintf(cgiOut, "</script>\n");
+		}
+
+#endif
 	}
 		
 	
 	
-	
+SHOW:	
 	fprintf(cgiOut, "<table width=\"100%%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n");
 	fprintf(cgiOut, "  <tr>\n");
 	fprintf(cgiOut, "    <td width=\"17\" height=\"29\" valign=\"top\" background=\"../images/mail_leftbg.gif\"><img src=\"../images/left-top-right.gif\" width=\"17\" height=\"29\" /></td>\n");
@@ -239,6 +324,35 @@ int cgiMain()
 	show_alarm(8);
 
 
+	fprintf(cgiOut, "                    </label></td>\n");
+	fprintf(cgiOut, "                </tr>\n");
+	fprintf(cgiOut, "                <tr>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">Output1：</td>\n");
+	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
+	show_output1();
+
+	fprintf(cgiOut, "                    </label></td>\n");
+	fprintf(cgiOut, "                </tr>\n");
+	fprintf(cgiOut, "                <tr>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">Output2：</td>\n");
+	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
+	show_output2();
+
+	fprintf(cgiOut, "                    </label></td>\n");
+	fprintf(cgiOut, "                </tr>\n");
+	fprintf(cgiOut, "                <tr>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">Output3：</td>\n");
+	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
+	show_output3();
+
+
+
+	fprintf(cgiOut, "                <tr>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" colspan=\"4\" align=\"center\" class=\"left_txt2\"><input type=\"submit\" value=\"设置\" name=\"setting\" /></td>\n");
+	fprintf(cgiOut, "                </tr>\n");
 	
 	fprintf(cgiOut, "</body>\n");
 }

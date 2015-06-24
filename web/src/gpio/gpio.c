@@ -223,6 +223,8 @@ int cgiMain()
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
 	show_alarm(8);
+
+
 	
 	fprintf(cgiOut, "</body>\n");
 }

@@ -392,6 +392,10 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 		for (i=0;i<8;i++){
 			mygpio.alarm_on_off[i] = g_conf_info.con_gpio.alarm_on_off[i];
 		}		
+
+		for(i=0;i<3;i++){
+			mygpio.output[i]=g_conf_info.con_gpio.output[i];
+		}
 		
 		itsip_pack(ITS_ACK_CONF_QUERY, sizeof(CONFIG_GPIO), 0, NULL, &its_ack_pak);
 		
@@ -453,6 +457,25 @@ int sys_netinfo_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 	
 	return NET_SET_OK;
 }
+
+int sys_gpio_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
+{
+	CONFIG_GPIO conf_gpio;
+	if(web_conn_recv(conn_info, &conf_gpio, sizeof(CONFIG_GPIO)) == FAILURE)
+		return NET_SET_FAILED;
+	memcpy(&g_conf_info.con_gpio, &conf_gpio, sizeof(CONFIG_GPIO));
+
+	/*todo*/
+	sys_log(FUNC, LOG_MSG, "OUTPUT 1 2 3:%d, %d, %d", conf_gpio.output[0],conf_gpio.output[1],conf_gpio.output[2]);
+	set_gpio(OUTPUT_1, GD_OUT,g_conf_info.con_gpio.output[0]);
+	set_gpio(OUTPUT_2, GD_OUT,g_conf_info.con_gpio.output[1]);
+	set_gpio(OUTPUT_3, GD_OUT,g_conf_info.con_gpio.output[2]);
+	
+	
+    	config_save(&g_conf_info);
+	return GPIO_SET_OK;
+}
+
 
 int sys_vlan_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 {
@@ -792,6 +815,20 @@ static void web_cmd_proc(ITSIP *p_net_head, NET_CONN_INFO *conn_info)
 					g_reconnect_flag = RECONNECT_ON;
 				}
 			}break;		
+
+			case ITS_GPIO_QUERY:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_GPIO_QUERY+++");
+				itsip_pack(ITS_ACK_GPIO_QUERY, sizeof(g_conf_info.con_gpio), 0, NULL, &its_ack_pak);
+				net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_gpio, sizeof(g_conf_info.con_gpio));
+			}break;
+			
+			case ITS_GPIO_SET:{
+				sys_log(FUNC, LOG_MSG, "+++ITS_GPIO_SET+++");
+				ret = sys_gpio_set(conn_info, p_net_head);
+				itsip_pack(ITS_ACK_GPIO_SET, 0, 0, NULL, &its_ack_pak);
+				its_ack_pak.head.itsip_data[0] = ret;
+				net_conn_send(conn_info, &its_ack_pak.head, NULL, 0);
+			}break;
 
 
 			default:{
