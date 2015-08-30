@@ -67,6 +67,14 @@ void show_alarm(int num)
 
 #endif
 
+void show_sensor()
+{
+	fprintf(cgiOut, "<td height=\"30\" bgcolor=\"#f2f2f2\"><input name=\"sensor\"  type=\"text\" value=\"%s\" size=\"30\" readonly=\"true\"/></td>\n", con_gpio.sensor);
+}
+
+
+
+
 int cgiMain()
 {
 	int ret = session_read(name);
@@ -224,6 +232,13 @@ int cgiMain()
 	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
 	show_alarm(8);
 
+	fprintf(cgiOut, "                    </label></td>\n");
+	fprintf(cgiOut, "                </tr>\n");
+	fprintf(cgiOut, "                <tr>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">ÎÂÊª¶È£º</td>\n");
+	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
+	show_sensor();
 
 	
 	fprintf(cgiOut, "</body>\n");

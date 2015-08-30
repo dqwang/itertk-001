@@ -43,6 +43,7 @@ int set_gpio(gpio_num gn, gpio_dir gd, gpio_status gs);
 int get_gpio(gpio_num gn, gpio_status *gsP);
 int init_gpio(void);
 void get_alarm(u8 alarm_in[]);
+void get_sensor(char *p);
 
 
 #define LED_ON GS_LOW

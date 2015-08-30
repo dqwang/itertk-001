@@ -396,6 +396,9 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 		for(i=0;i<3;i++){
 			mygpio.output[i]=g_conf_info.con_gpio.output[i];
 		}
+
+		
+		
 		
 		itsip_pack(ITS_ACK_CONF_QUERY, sizeof(CONFIG_GPIO), 0, NULL, &its_ack_pak);
 		
@@ -817,7 +820,12 @@ static void web_cmd_proc(ITSIP *p_net_head, NET_CONN_INFO *conn_info)
 			}break;		
 
 			case ITS_GPIO_QUERY:{
+				int i=0;
 				sys_log(FUNC, LOG_MSG, "+++ITS_GPIO_QUERY+++");
+				for (i=0;i<8;i++){
+					g_conf_info.con_gpio.alarm[i]=g_alarm_in[i];
+				}
+				get_sensor(g_conf_info.con_gpio.sensor);
 				itsip_pack(ITS_ACK_GPIO_QUERY, sizeof(g_conf_info.con_gpio), 0, NULL, &its_ack_pak);
 				net_conn_send(conn_info, &its_ack_pak.head, (BYTE*)&g_conf_info.con_gpio, sizeof(g_conf_info.con_gpio));
 			}break;

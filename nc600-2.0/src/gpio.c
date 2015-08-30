@@ -344,7 +344,7 @@ void get_alarm(u8 alarm_in[])
 #if 1
 void alarm_proc(void)
 {
-	u8 t=0;
+
 	u8 time[ALARM_MAX];
 	u8 alarm_init[ALARM_MAX];
 	u8 alarm_update[ALARM_MAX];
@@ -489,7 +489,27 @@ int init_gpio(void)
 	return 0;
 }
 
+#define SENSOR_PROC "/proc/am2301"
+void get_sensor(char *p)
+{
+	int ret=-1;
+	int fd;
+	
+	fd=open(SENSOR_PROC, O_RDONLY, NULL);
+	if (fd <0){
+		sys_log(FUNC, LOG_ERR, "%s","open");
+	}
 
+	ret=read(fd, p, 30);
+	
+	if (ret <0){
+		sys_log(FUNC, LOG_ERR, "%s","read");
+	}else{
+		sys_log(FUNC, LOG_DBG, "%s",p);
+	}
+	
+	close(fd);
+}
 
 
 
