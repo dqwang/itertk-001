@@ -11,7 +11,7 @@ pthread_mutex_t rs485_mutex;		/*rs485°ëË«¹¤Ëø*/
 
 static void com_dev_open(void)
 {
-    int i;
+    int i=0;
     char name[32] = "";
 
     FOR(i, MAX_COM_PORT)
@@ -304,25 +304,33 @@ void com_para_set(int fd, CONFIG_COM *con_com)
 ///     @author     xuliang<gxuliang@gmail.com>
 ///     @date       2010-05-05
 //////////////////////////////////////////////////////////////////////////
+#define COM_RECV_BUF_MAX (1024*128L)
+
 static void com_proc(void* arg)
 {
 	CONFIG_COM *con_com = (CONFIG_COM*)arg;	
-	char lsbuf[1024];
+	char lsbuf[COM_RECV_BUF_MAX];
+	int i=0;
+	int len;
 	sys_log(FUNC, LOG_MSG, "start fd=%d", gcomfd[con_com->id - 1]);
+	
 	while(1){
-		int len;		
-		if (rs_type  == RS232){
-			len = read(gcomfd[con_com->id - 1], lsbuf, 1024);
+				
+		if (rs_type  == RS232){			
+			len = read(gcomfd[con_com->id - 1], lsbuf, COM_RECV_BUF_MAX);				
 			if(len > 0)	{
-				//printf("i = %d,len = %d\n", con_com->id, len);
+				#if 0//just for testing uart
+				write(gcomfd[con_com->id - 1], lsbuf, len);
+				#endif				
 				SendComDataToNet(con_com->id - 1, lsbuf, len);
 			}
+			
 		}else if (rs_type == RS485){
 
 			/*LOCK*/
 			pthread_mutex_lock(&rs485_mutex);
 			
-			len = read(gcomfd[con_com->id - 1], lsbuf, 1024);
+			len = read(gcomfd[con_com->id - 1], lsbuf, COM_RECV_BUF_MAX);
 			if(len > 0)	{
 				//printf("i = %d,len = %d\n", con_com->id, len);
 				SendComDataToNet(con_com->id - 1, lsbuf, len);
@@ -331,7 +339,7 @@ static void com_proc(void* arg)
 			/*UNLOCK*/
 			pthread_mutex_unlock(&rs485_mutex);
 		}
-		
+		usleep(1000);
 		
 	}
 

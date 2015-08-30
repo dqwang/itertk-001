@@ -183,37 +183,37 @@ int init_udp_socket(int port)
 //////////////////////////////////////////////////////////////////////////
 inline int SendComDataToNet(int id, void *data, int len)
 {
-    MODECONFIG *md = mode[id];
-    int i, j;
-    struct sockaddr_in my_addr;
-    FOR(i, MAX_SESSION)
-    {
-    printf("md[i].session->protocol =%d\n", md[i].session->protocol);
-        switch(md[i].session->protocol)
-        {
-        case TCP_CLI:
-            if(md[i].fd)
-                send(md[i].fd, data, len, 0);
-            break;
-        case TCP_SRV:
-            FOR(j, MAX_SESSION)
-            {
-                if(md[i].sfd[j])
-                    send(md[i].sfd[j], data, len, 0);
-            }
-            break;
-        case TCP_UDP:
-            if(md[i].fd)
-            {
-                my_addr.sin_family = AF_INET;
-                my_addr.sin_port = htons(md[i].session->dport);
-                my_addr.sin_addr.s_addr = md[i].session->ip;
-                bzero(&(my_addr.sin_zero), 8);
-                sendto(md[i].fd, data, len, 0, (struct sockaddr *)&my_addr, sizeof(my_addr));
-            }
-            break;
-        }
-    }
+	MODECONFIG *md = mode[id];
+	int i, j;
+	struct sockaddr_in my_addr;
+	FOR(i, MAX_SESSION)
+	{
+		//printf("md[i].session->protocol =%d\n", md[i].session->protocol);
+		switch(md[i].session->protocol)
+		{
+			case TCP_CLI:
+				if(md[i].fd)
+					send(md[i].fd, data, len, 0);
+			break;
+			case TCP_SRV:
+				FOR(j, MAX_SESSION)
+				{
+					if(md[i].sfd[j])
+						send(md[i].sfd[j], data, len, 0);
+				}
+			break;
+			case TCP_UDP:
+				if(md[i].fd)
+				{
+					my_addr.sin_family = AF_INET;
+					my_addr.sin_port = htons(md[i].session->dport);
+					my_addr.sin_addr.s_addr = md[i].session->ip;
+					bzero(&(my_addr.sin_zero), 8);
+					sendto(md[i].fd, data, len, 0, (struct sockaddr *)&my_addr, sizeof(my_addr));
+				}
+			break;
+		}
+	}
 
 	return 0;//WANG
 }
@@ -231,164 +231,164 @@ inline int SendComDataToNet(int id, void *data, int len)
 #define NET_RECV_BUF_MAX (1024*64L)
 static void mode_proc(void* arg)
 {
-    MODECONFIG *md = (MODECONFIG*)arg;
-    const CONFIG_MODE* con_mode = &g_conf_info.con_mode[md->id];
-    fd_set m_readfds;
-    struct timeval tv;
-    int ret, len, i, max_fd, client_sock, addr_size;
-    CONFIG_SESSION tmp;
-    char lsbuf[NET_RECV_BUF_MAX];
-    struct sockaddr_in addr;
-    struct sockaddr_in client_addr;
-    socklen_t addr_len;
-static int cnt =0;
+	MODECONFIG *md = (MODECONFIG*)arg;
+	const CONFIG_MODE* con_mode = &g_conf_info.con_mode[md->id];
+	fd_set m_readfds;
+	struct timeval tv;
+	int ret, len, i, max_fd, client_sock, addr_size;
+	CONFIG_SESSION tmp;
+	char lsbuf[NET_RECV_BUF_MAX];
+	struct sockaddr_in addr;
+	struct sockaddr_in client_addr;
+	socklen_t addr_len;
+	static int cnt =0;
 
 	sys_log(FUNC, LOG_MSG, "start");
 AGAIN:
-    if(con_mode->mode == WORK_NO || md->session->protocol == TCP_NO)
-    {
-        sleep(1);
-        goto AGAIN;
-    }
-    else if(md->session->protocol == TCP_CLI)
-    {
-        if((md->fd = socket_cli_init(md->session->ip, md->session->dport)) <= 0)
-        {
-            {
-                sys_log(FUNC, LOG_WARN, "[%d]connect ip is %s, port = %d failed", \
-                md->id, sys_ip2str_static(md->session->ip), md->session->dport);
-            
-                sleep(5);
-                goto AGAIN;
-            }
-        }
-    }
-    else if(md->session->protocol == TCP_SRV)
-    {
-        if((md->fd = socket_init(md->session->lport, md->session->max_num)) <= 0)
-        {    
-            sys_log(FUNC, LOG_WARN, "creat server socket failed");
-        
-            sleep(5);
-            goto AGAIN;
-        }
-    }
-    else if(md->session->protocol == TCP_UDP)
-    {
-        if((md->fd = init_udp_socket(md->session->lport)) <= 0)
-        {    
-            sys_log(FUNC, LOG_WARN, "creat udp socket failed");
-        
-            sleep(5);
-            goto AGAIN;
-        }
-    }
-    else
-    {
-        sleep(1);
-        goto AGAIN;
-    }
-    //==============================================================
-    memcpy(&tmp, md->session, sizeof(CONFIG_SESSION));
-    while(1)
-    {
-	sys_log(FUNC, LOG_DBG,"%d\n",cnt++);
-	if(con_mode->mode == WORK_NO || memcmp(md->session, &tmp, sizeof(CONFIG_SESSION)) != 0)
-        {
-            close(md->fd);
-            md->fd = 0;
-            FOR(i, MAX_SESSION)
-            {
-                if(md->sfd[i])
-                {
-                    close(md->sfd[i]);
-                    md->sfd[i] = 0;
-                }
-            }
-            goto AGAIN;
-        }
-        
-        FD_ZERO(&m_readfds);
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-        switch(md->session->protocol)
-        {
-        case TCP_CLI:
-            FD_SET(md->fd, &m_readfds);
-            ret = select(md->fd + 1, &m_readfds, NULL, NULL, &tv);
-            if(ret <= 0)
-                continue;
-            else
-            {
-                len = recv(md->fd, lsbuf, NET_RECV_BUF_MAX, 0);
-                if(len == 0)
-                {
-                    close(md->fd);
-                    md->fd = 0;
-                    goto AGAIN;
-                }
-                SendNetDataToCom(md->id, lsbuf, len);
-            }
-            break;
-        case TCP_SRV:
-            FD_SET(md->fd, &m_readfds);
-            max_fd = md->fd;
-            FOR(i, MAX_SESSION)
-            {
-                if(md->sfd[i] > 0)
-                {
-                    FD_SET(md->sfd[i], &m_readfds);
-                    max_fd = max_fd > md->sfd[i] ? max_fd : md->sfd[i];
-                }
-            }
-            ret = select(max_fd + 1, &m_readfds, NULL, NULL, &tv);
-            if (FD_ISSET(md->fd, &m_readfds))
-            {
-                client_sock = accept(md->fd, (struct sockaddr *) & client_addr, (socklen_t*)&addr_size);
-                FOR(i, MAX_SESSION)
-                {
-                    if(md->sfd[i] == 0)
-                        break;
-                }
-                if(i == MAX_SESSION)
-                {
-                    sys_log(FUNC, LOG_WARN, "reach max connection!");
-                    close(client_sock);
-                }
-                else
-                {
-                    sys_log(FUNC, LOG_MSG, "++++++++++++++++++++新连接进入 %s.++++++++++++++++++++\n", inet_ntoa(client_addr.sin_addr));
-                    md->sfd[i] = client_sock;
-                }
-            }
-            FOR(i, MAX_SESSION)
-            {
-                if (md->sfd[i] > 0 && FD_ISSET(md->sfd[i], &m_readfds))
-                {
-                    len = recv(md->sfd[i], lsbuf, NET_RECV_BUF_MAX, 0);
-                    if(len == 0)
-                    {
-                        close(md->sfd[i]);
-                        md->sfd[i] = 0;
-                        continue;
-                    }
-                    SendNetDataToCom(md->id, lsbuf, len);
-                }
-            }
-            break;
-        case TCP_UDP:
-            FD_SET(md->fd, &m_readfds);
-            ret = select(md->fd + 1, &m_readfds, NULL, NULL, &tv);
-            if(ret <= 0)
-                continue;
-            else
-            {
-                len = recvfrom(md->fd, lsbuf, NET_RECV_BUF_MAX, 0, (struct sockaddr *)&addr, &addr_len);
-                SendNetDataToCom(md->id, lsbuf, len);
-            }
-            break;
-        }
-    }
+	if(con_mode->mode == WORK_NO || md->session->protocol == TCP_NO)
+	{
+		sleep(1);
+		goto AGAIN;
+	}
+	else if(md->session->protocol == TCP_CLI)
+	{
+		if((md->fd = socket_cli_init(md->session->ip, md->session->dport)) <= 0)
+		{
+			{
+				sys_log(FUNC, LOG_WARN, "[%d]connect ip is %s, port = %d failed", \
+				md->id, sys_ip2str_static(md->session->ip), md->session->dport);
+
+				sleep(5);
+				goto AGAIN;
+			}
+		}
+	}
+	else if(md->session->protocol == TCP_SRV)
+	{
+		if((md->fd = socket_init(md->session->lport, md->session->max_num)) <= 0)
+		{    
+			sys_log(FUNC, LOG_WARN, "creat server socket failed");
+
+			sleep(5);
+			goto AGAIN;
+		}
+	}
+	else if(md->session->protocol == TCP_UDP)
+	{
+		if((md->fd = init_udp_socket(md->session->lport)) <= 0)
+		{    
+			sys_log(FUNC, LOG_WARN, "creat udp socket failed");
+
+			sleep(5);
+			goto AGAIN;
+		}
+	}
+	else
+	{
+		sleep(1);
+		goto AGAIN;
+	}
+	//==============================================================
+	memcpy(&tmp, md->session, sizeof(CONFIG_SESSION));
+	while(1)
+	{
+		//sys_log(FUNC, LOG_DBG,"%d\n",cnt++);
+		if(con_mode->mode == WORK_NO || memcmp(md->session, &tmp, sizeof(CONFIG_SESSION)) != 0)
+		{
+			close(md->fd);
+			md->fd = 0;
+			FOR(i, MAX_SESSION)
+			{
+				if(md->sfd[i])
+				{
+					close(md->sfd[i]);
+					md->sfd[i] = 0;
+				}
+			}
+			goto AGAIN;
+		}
+
+		FD_ZERO(&m_readfds);
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		switch(md->session->protocol)
+		{
+			case TCP_CLI:
+				FD_SET(md->fd, &m_readfds);
+				ret = select(md->fd + 1, &m_readfds, NULL, NULL, &tv);
+				if(ret <= 0)
+					continue;
+				else
+				{
+					len = recv(md->fd, lsbuf, NET_RECV_BUF_MAX, 0);
+					if(len == 0)
+					{
+						close(md->fd);
+						md->fd = 0;
+						goto AGAIN;
+					}
+					SendNetDataToCom(md->id, lsbuf, len);
+				}
+			break;
+			case TCP_SRV:
+				FD_SET(md->fd, &m_readfds);
+				max_fd = md->fd;
+				FOR(i, MAX_SESSION)
+				{
+					if(md->sfd[i] > 0)
+					{
+						FD_SET(md->sfd[i], &m_readfds);
+						max_fd = max_fd > md->sfd[i] ? max_fd : md->sfd[i];
+					}
+				}
+				ret = select(max_fd + 1, &m_readfds, NULL, NULL, &tv);
+				if (FD_ISSET(md->fd, &m_readfds))
+				{
+					client_sock = accept(md->fd, (struct sockaddr *) & client_addr, (socklen_t*)&addr_size);
+					FOR(i, MAX_SESSION)
+					{
+						if(md->sfd[i] == 0)
+						break;
+					}
+					if(i == MAX_SESSION)
+					{
+						sys_log(FUNC, LOG_WARN, "reach max connection!");
+						close(client_sock);
+					}
+					else
+					{
+						sys_log(FUNC, LOG_MSG, "++++++++++++++++++++新连接进入 %s.++++++++++++++++++++\n", inet_ntoa(client_addr.sin_addr));
+						md->sfd[i] = client_sock;
+					}
+				}
+				FOR(i, MAX_SESSION)
+				{
+					if (md->sfd[i] > 0 && FD_ISSET(md->sfd[i], &m_readfds))
+					{
+						len = recv(md->sfd[i], lsbuf, NET_RECV_BUF_MAX, 0);
+						if(len == 0)
+						{
+							close(md->sfd[i]);
+							md->sfd[i] = 0;
+							continue;
+						}
+						SendNetDataToCom(md->id, lsbuf, len);
+					}
+				}
+			break;
+			case TCP_UDP:
+				FD_SET(md->fd, &m_readfds);
+				ret = select(md->fd + 1, &m_readfds, NULL, NULL, &tv);
+				if(ret <= 0)
+					continue;
+				else
+				{
+					len = recvfrom(md->fd, lsbuf, NET_RECV_BUF_MAX, 0, (struct sockaddr *)&addr, &addr_len);
+					SendNetDataToCom(md->id, lsbuf, len);
+				}
+			break;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

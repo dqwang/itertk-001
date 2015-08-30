@@ -20,7 +20,11 @@ int main ( int argc, char **argv )
 	client_thread();	
 	system("telnetd");
 	led_ctrl(LED_D1_SYSTEM_STATUS, LED_ON);	
+
+	mode_init();
+		
 	com_init();
+	
 	while(1)
 	{		
 		web_process();		

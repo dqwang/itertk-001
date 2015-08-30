@@ -159,6 +159,7 @@ H1 a {
 		  <li><a href="cgi-bin/factory.cgi" target="main">恢复出厂值</a></li>
         </ul>
       </div>
+      
       <h1 class="type"><a href="javascript:void(0)">服务器管理</a></h1>
       <div class="content">
         <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -170,6 +171,8 @@ H1 a {
           <li><a href="cgi-bin/server.cgi" target="main">服务器设置</a></li>		      
         </ul>
       </div>
+
+      
       <h1 class="type"><a href="javascript:void(0)">传感器管理</a></h1>
       <div class="content">
         <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -179,11 +182,28 @@ H1 a {
         </table>
         <ul class="MM">
 		  <li><a href="cgi-bin/gpio_set.cgi" target="main">传感器设置</a></li>
-          <li><a href="cgi-bin/gpio.cgi" target="main">传感器采样</a></li>
-		  
-		  
+          <li><a href="cgi-bin/gpio.cgi" target="main">传感器采样</a></li>		  
         </ul>
       </div>
+
+	<h1 class="type"><a href="javascript:void(0)">串口网络管理</a></h1>
+	<div class="content">
+	<table width="100%" border="0" cellspacing="0" cellpadding="0">
+	<tr>
+	<td><img src="images/menu_topline.gif" width="182" height="5" /></td>
+	</tr>
+	</table>
+	<ul class="MM">
+		<li><a href="cgi-bin/com.cgi?1" target="main">串口1</a></li>
+		<li><a href="cgi-bin/com.cgi?2" target="main">串口2</a></li>
+		<li><a href="cgi-bin/mode.cgi?1" target="main">端口1</a></li>
+		<li><a href="cgi-bin/mode.cgi?2" target="main">端口2</a></li>
+	  <!--
+	<li><a href="cgi-bin/com.cgi" target="main">串口模式设置</a></li>
+	<li><a href="cgi-bin/mode.cgi" target="main">网络模式设置</a></li>
+	-->
+	</ul>
+	</div>
       
         <script type="text/javascript">
 		var contents = document.getElementsByClassName('content');
