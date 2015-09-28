@@ -5,7 +5,7 @@
 #include "log.h"
 
 
-static int gcomfd[MAX_COM_PORT] = {0};
+int gcomfd[MAX_COM_PORT] = {0};
 BYTE  rs_type = RS232;//default
 pthread_mutex_t rs485_mutex;		/*rs485°ëË«¹¤Ëø*/
 
@@ -310,7 +310,6 @@ static void com_proc(void* arg)
 {
 	CONFIG_COM *con_com = (CONFIG_COM*)arg;	
 	char lsbuf[COM_RECV_BUF_MAX];
-	int i=0;
 	int len;
 	sys_log(FUNC, LOG_MSG, "start fd=%d", gcomfd[con_com->id - 1]);
 	

@@ -241,8 +241,7 @@ static void mode_proc(void* arg)
 	struct sockaddr_in addr;
 	struct sockaddr_in client_addr;
 	socklen_t addr_len;
-	static int cnt =0;
-
+	
 	sys_log(FUNC, LOG_MSG, "start");
 AGAIN:
 	if(con_mode->mode == WORK_NO || md->session->protocol == TCP_NO)

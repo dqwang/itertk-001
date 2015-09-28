@@ -5,6 +5,7 @@
 #include "thread.h"
 #include "cmd_def.h"
 #include "gpio.h"
+#include "com.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -12,6 +13,9 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <errno.h>
+
+CONFIG_COM get_com_attr;
+CONFIG_COM set_com_attr;
 
 
 extern u8 g_alarm_in[ALARM_MAX];
@@ -43,11 +47,11 @@ int check_protocol_head(u8 * _buf,  u8 _protocol_id)
 	return 0;
 }
 
-void make_ack_head( u8 * _buf, u8 _protocol_num)
+void make_ack_head( u8 * _buf, u8 _protocol_id)
 {
 	_buf[0] = PROTOCOL_HEAD_1;
 	_buf[1] = PROTOCOL_HEAD_2;
-	_buf[2] = _protocol_num;
+	_buf[2] = _protocol_id;
 	_buf[3] = ALARM_DEVICE_ID;	
 }
 
@@ -140,13 +144,21 @@ int check_for_set_time(u8 * _buf, u8 _num)
 {
 	if(_num < 11) return ERROR_NUM_IS_NOT_ENOUGH;
 	
-	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_ALARM_STATUS))
+	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_TIME))
 		return ERROR_HEAD_OR_DEVICE_ID;
 	
 	if(check_for_crc(_buf,_num))
 		return ERROR_CRC_CHECK;
 		
 	return 0;
+}
+
+
+int make_ack_set_time(u8 * _buf)
+{
+	make_ack_head( _buf, (u8)PROTOCOL_SET_TIME);
+	_buf[4] = make_crc_num( _buf, 4);/*crc data num= sizeof(buf)-1*/
+	return 4+1;	
 }
 
 int make_get_time(u8 * _buf)
@@ -176,6 +188,414 @@ int make_ack_set_heartbeat(u8 * _buf, u8 _heartbeat_s)
 	_buf[5] = make_crc_num(_buf,5);
 	return 6;
 }
+
+int check_for_get_uart_qty(u8* _buf, u8 _num)
+{
+	if(_num < 5) return ERROR_NUM_IS_NOT_ENOUGH;
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_UART_QTY))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+	
+	return 0;
+}
+
+int make_ack_get_uart_qty(u8 * _buf)
+{
+	make_ack_head(_buf, PROTOCOL_ACK_UART_QTY);
+	_buf[4]=MAX_COM_PORT;/*2 UART*/
+	_buf[5]=make_crc_num(_buf, 5);
+	return 6;
+	
+}
+
+#define INVALID_ID 0xff
+
+int check_for_get_uart_attr(u8* _buf, u8 _num)
+{
+	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_UART_ATTR))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	if (_buf[4]==1 || _buf[4] ==2){
+		get_com_attr.id=_buf[4]-1;
+	}else{
+		get_com_attr.id=_buf[4];
+	}
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+#define calc_high_byte(x) (x/0x10000)
+#define calc_mid_byte(x) (x%0x10000/0x100)
+#define calc_low_byte(x) (x%0x10000%0x100)
+
+#define calc_baud_rate(a,b,c) (a*0x10000+b*0x100+c)
+
+u8 return_local_odd_even(u8 remote_oddeven)
+{
+	switch(remote_oddeven){
+		case 0:
+			return 3;//none
+		case 1:
+			return 2;//odd
+		case 2:
+			return 1;//even
+		default:
+			break;
+	}	
+	return -1;
+}
+
+u8 return_remote_odd_even(u8 local_oddeven)
+{
+	switch(local_oddeven){
+		case 3:
+			return 0;//none
+		case 2:
+			return 1;//odd
+		case 1:
+			return 2;//even
+		default:
+			break;
+	}	
+	return -1;
+}
+
+
+
+int make_ack_get_uart_attr(u8* _buf)
+{
+	make_ack_head(_buf, PROTOCOL_ACK_GET_UART_ATTR);
+	
+	if (get_com_attr.id <2){
+		_buf[4]=get_com_attr.id+1;
+		
+		memcpy(&get_com_attr,  &g_conf_info.con_com[get_com_attr.id], sizeof(CONFIG_COM));
+			
+		
+		_buf[5]=calc_high_byte(get_com_attr.bps);
+		_buf[6]=calc_mid_byte(get_com_attr.bps);
+		_buf[7]=calc_low_byte(get_com_attr.bps);
+		_buf[8]=get_com_attr.dbit;
+		_buf[9]=get_com_attr.sbit;
+
+		_buf[10]=return_remote_odd_even(get_com_attr.chk);
+		
+	}else{
+		_buf[4]=get_com_attr.id;
+		_buf[5]=0;
+		_buf[6]=0;
+		_buf[7]=0;
+		_buf[8]=0;
+		_buf[9]=0;
+		_buf[10]=0;
+	}	
+	_buf[11]=make_crc_num(_buf, 11);
+	return 12;
+}
+
+
+int check_for_set_uart_attr(u8* _buf, u8 _num)
+{
+	if(_num < 12) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_UART_ATTR))
+		return ERROR_HEAD_OR_DEVICE_ID;
+
+	set_com_attr.id=_buf[4]-1;
+	set_com_attr.bps = calc_baud_rate(_buf[5], _buf[6], _buf[7]);
+	set_com_attr.dbit = _buf[8];
+	set_com_attr.sbit = _buf[9];
+	set_com_attr.chk =return_local_odd_even( _buf[10]);
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+#define SET_UART_ATTR_PASS 1
+#define SET_UART_ATTR_FAIL 0
+
+u8  is_good_uart(CONFIG_COM * pcom)
+{
+	u8 ret = 0;
+	switch (pcom->bps)
+	{
+		case 300:
+		case 600:		
+		case 1200:			
+		case 2400:			
+		case 4800:		
+		case 9600:
+		case 19200:		
+		case 38400:				
+		case 57600:		
+		case 115200:
+		case 230400:
+		case 460800:
+		case 576000:
+		case 921600:
+			ret += 1; 
+		break;
+		
+		default:
+			sys_log(FUNC, LOG_DBG, "Baud rate Error: %d",pcom->bps);
+			return SET_UART_ATTR_FAIL;
+		
+	}
+	switch (pcom->dbit)
+	{
+		case 5:			
+		case 6:			
+		case 7:		
+		case 8:
+			ret += 1; 
+		break;
+
+		default:
+			sys_log(FUNC, LOG_DBG, "Databit Error: %d",pcom->dbit);
+			return SET_UART_ATTR_FAIL;
+	}
+	
+
+	switch (pcom->chk)
+	{
+		case 3:		
+		case 2://Ææ			
+		case 1://Å¼
+			ret += 1;
+		break;
+		
+		default:
+			sys_log(FUNC, LOG_DBG, "Checkbit Error: %d",pcom->chk);
+			return SET_UART_ATTR_FAIL;
+	}
+
+	//set stop bits
+	switch (pcom->sbit)
+	{
+		case 1:			
+		case 2:
+			ret += 1;
+		break;
+		
+		default:
+			sys_log(FUNC, LOG_DBG, "Stopbit Error: %d",pcom->sbit);
+			return SET_UART_ATTR_FAIL;
+	}
+
+	return SET_UART_ATTR_PASS;
+}
+
+
+int make_ack_set_uart_attr(u8* _buf)
+{
+	make_ack_head( _buf, PROTOCOL_ACK_SET_UART_ATTR);
+
+	if (set_com_attr.id <2 && is_good_uart(&set_com_attr) == SET_UART_ATTR_PASS){
+		_buf[4]=set_com_attr.id+1;
+		_buf[5]=SET_UART_ATTR_PASS;
+		
+		/* TODO */
+		memcpy(&g_conf_info.con_com , &set_com_attr, sizeof(CONFIG_COM));
+		/*still available if reboot*/
+		config_save(&g_conf_info);
+		/*set com*/
+		com_set(&set_com_attr);
+		
+	}else{
+		_buf[4]=set_com_attr.id+1;
+		_buf[5]=SET_UART_ATTR_FAIL;
+	}
+	
+	_buf[6]=make_crc_num(_buf, 6);
+	return 7;
+}
+
+int check_for_query_uart_sendbuf(u8* _buf, u8 _num)
+{
+	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_QUERY_UART_SENDBUF))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	get_com_attr.id = _buf[4]-1;
+	
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+int make_ack_query_uart_sendbuf(u8* _buf)
+{
+	make_ack_head( _buf, PROTOCOL_ACK_QUERY_UART_SENDBUF);
+	_buf[4]=get_com_attr.id+1;
+	_buf[5]=0x08;
+	_buf[6]=0x00;
+	_buf[7]=make_crc_num(_buf,7);
+	return 7+1;
+}
+
+
+int check_for_uart_send_data(u8* _buf, u8 _num)
+{
+	if(_num < 8) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_UART_SEND_DATA))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	get_com_attr.id = _buf[4]-1;
+	
+	
+	/*todo forwart to net??*/
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+int make_ack_uart_send_data(u8* _buf)
+
+{
+	make_ack_head( _buf, PROTOCOL_ACK_UART_SEND_DATA);
+	_buf[4]=get_com_attr.id +1;
+
+	/*TODO*/
+	_buf[5]=0;
+	_buf[6]=0;
+	_buf[7]=make_crc_num(_buf, 7);
+	return 7+1;
+}
+
+
+int check_for_set_uart_recv_attr(u8* _buf, u8 _num)
+{
+	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_UART_RECV_ATTR))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	get_com_attr.id = _buf[4]-1;
+
+	/*TODO*/
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+
+
+
+int check_for_query_uart_recv_data(u8* _buf, u8 _num)
+{
+	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_QUERY_UART_RECV_DATA))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	
+	get_com_attr.id = _buf[4]-1;
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+int make_ack_query_uart_recv_data(u8* _buf)
+{
+	int recv_size;
+	make_ack_head( _buf, PROTOCOL_QUERY_UART_RECV_DATA);
+
+	_buf[4]=get_com_attr.id+1;
+	_buf[5]=0;
+	_buf[6]=0;
+	recv_size=0;
+	
+	_buf[recv_size+7]=make_crc_num(_buf, recv_size+7);
+	return recv_size+7+1;
+}
+
+int check_for_get_io_num(u8* _buf, u8 _num)
+{
+	if(_num < 5) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_IO_NUM))
+		return ERROR_HEAD_OR_DEVICE_ID;
+
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+int make_ack_get_io_num(u8* _buf)
+{
+	make_ack_head( _buf, PROTOCOL_GET_IO_NUM);
+	_buf[4]=3;
+	_buf[5]=make_crc_num(_buf, 5);
+	return 5+1;
+}
+
+int check_for_set_io(u8* _buf, u8 _num)
+{
+	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_IO))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;	
+
+	return 0;
+}
+
+
+int check_for_get_io_status(u8* _buf, u8 _num)
+{
+	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_IO_STATUS))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+
+	
+int make_ack_get_io_status(u8* _buf)
+{
+	make_ack_head( _buf, PROTOCOL_GET_IO_STATUS);
+	_buf[4]=buf[4];
+
+	switch(buf[4]){
+		case 1:
+			get_gpio(OUTPUT_1,(gpio_status *)&_buf[5]);			
+			break;
+		case 2:
+			get_gpio(OUTPUT_2, (gpio_status *)&_buf[5]);	
+			break;
+		case 3:
+			get_gpio(OUTPUT_3, (gpio_status *)&_buf[5]);	
+			break;
+		default:
+			break;
+	}			
+	_buf[6]=make_crc_num(_buf, 6);
+	return 6+1;
+}
+
+
+
 
 
 void printf_hex(char *buf, int n)
@@ -427,12 +847,12 @@ int dns_resolution(char * dns_str)
 		h = gethostbyname(dns_str);	
 		g_conf_info.con_server.server_ip = sys_str2ip(inet_ntoa(*((struct in_addr *)h->h_addr_list[0])));
 		strcpy(g_conf_info.con_server.dns_str, dns_str);
-		sys_log(FUNC, LOG_MSG, " %s", "DNS  OK");	
+		sys_log(FUNC, LOG_MSG, " %s", "DNS  OK gethostbyname");	
 		return DNS_OK;
 	}else if (strlen(g_conf_info.con_server.dns_str) !=0 ){
 		if (its_dns(dns_str, g_conf_info.con_net.dns[0], ip_dest) == DNS_OK){
 			 g_conf_info.con_server.server_ip = sys_str2ip(ip_dest);
-			 sys_log(FUNC, LOG_MSG, " %s", "DNS  OK :)");	
+			 sys_log(FUNC, LOG_MSG, " %s", "DNS  OK  its_dns:)");	
 			 return DNS_OK;
 		}else{
 			sys_log(FUNC, LOG_ERR , " %s", "DNS  FAILED :(");
@@ -462,7 +882,7 @@ int client_connect_server(void)
 		perror("socket");
 		return FAILURE;
 	}
-	/*dns*/
+	/*dns*/	
 	ret=dns_resolution(g_conf_info.con_server.dns_str);
 	if (DNS_FAILED == ret){
 		return FAILURE;
@@ -647,15 +1067,25 @@ void client_process(void)
 					printf_hex(buf_send, num_to_send);
 				}
 				break;
+			case PROTOCOL_GET_TIME:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_TIME");
+				/*TODO ?*/
+				
+				break;
 			case PROTOCOL_SET_TIME:
-				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_TIME");
-				/*
-				if(!check_for_set_device_attr(buf,num_read_from_socket))
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_TIME");				
+				if(!check_for_set_time(buf,num_read_from_socket))
 				{
-					num_to_send = make_ack_set_device_attr(buf_send);
-					ret = write(sockfd, buf_send, num_read_from_socket);
-							if(ret != num_read_from_socket) printf("write socket error!\n");
-				}*/
+					/* TODO */
+					/*set time*/
+				
+					num_to_send = make_ack_set_time(buf_send);
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send)
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
 				break;
 			case PROTOCOL_SET_HEARTBEAT:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_HEARTBEAT");
@@ -672,6 +1102,148 @@ void client_process(void)
 					led_ctrl(LED_D3_ALARM_SERVER_STATUS, LED_ON);
 				}
 				break;
+			case PROTOCOL_GET_UART_QTY:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_UART_QTY");
+				if(!check_for_get_uart_qty(buf,num_read_from_socket))
+				{					
+					num_to_send = make_ack_get_uart_qty(buf_send);
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+
+				break;
+			case PROTOCOL_GET_UART_ATTR:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_UART_ATTR");
+				if (!check_for_get_uart_attr(buf, num_read_from_socket)){
+					num_to_send = make_ack_get_uart_attr(buf_send);
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+				
+				break;
+			case PROTOCOL_SET_UART_ATTR:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_UART_ATTR");
+				if (!check_for_set_uart_attr(buf, num_read_from_socket)){
+					num_to_send=make_ack_set_uart_attr(buf_send);
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+				break;
+			case PROTOCOL_QUERY_UART_SENDBUF:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_QUERY_UART_SENDBUF");
+				if (!check_for_query_uart_sendbuf(buf, num_read_from_socket)){
+					num_to_send = make_ack_query_uart_sendbuf(buf_send);
+
+					/*TODO :buf*/
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+
+			case PROTOCOL_UART_SEND_DATA:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_UART_SEND_DATA");
+				if (!check_for_uart_send_data(buf, num_read_from_socket)){
+					num_to_send = make_ack_uart_send_data(buf_send);
+
+					/*TODO*/
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+			case PROTOCOL_SET_UART_RECV_ATTR:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_UART_RECV_ATTR");
+				if (!check_for_set_uart_recv_attr(buf, num_read_from_socket)){
+					
+					/*TODO*/
+
+					
+				}
+			break;
+
+			case PROTOCOL_QUERY_UART_RECV_DATA:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_QUERY_UART_RECV_DATA");
+				if (!check_for_query_uart_recv_data(buf, num_read_from_socket)){
+					num_to_send = make_ack_query_uart_recv_data(buf_send);
+
+					/*TODO*/
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+
+			case PROTOCOL_GET_IO_NUM:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_IO_NUM");
+				if (!check_for_get_io_num(buf, num_read_from_socket)){
+					num_to_send = make_ack_get_io_num(buf_send);
+
+					/*TODO*/
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+
+			case PROTOCOL_SET_IO:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_IO");
+				if (!check_for_set_io(buf, num_read_from_socket)){
+					
+					/*TODO*/
+
+					switch(buf[4]){
+						case 1:
+							set_gpio(OUTPUT_1, GD_OUT,buf[5]);
+							break;
+						case 2:
+							set_gpio(OUTPUT_2, GD_OUT,buf[5]);
+							break;
+						case 3:
+							set_gpio(OUTPUT_3, GD_OUT,buf[5]);
+							break;
+						default:
+							break;
+					}					
+				}
+			break;
+
+			case PROTOCOL_GET_IO_STATUS:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_IO_STATUS");
+				if (!check_for_get_io_status(buf, num_read_from_socket)){
+								
+					num_to_send = make_ack_get_io_status(buf_send);
+
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+						
 				
 			default:
 				sys_log(FUNC, LOG_ERR, "wrong cmd from server ");
