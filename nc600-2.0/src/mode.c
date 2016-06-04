@@ -22,7 +22,7 @@
 #include "thread.h"
 #include "log.h"
 #include "system.h"
-
+#include "client.h"
 
 MODECONFIG mode[MAX_COM_PORT][MAX_SESSION];
 
@@ -217,6 +217,10 @@ inline int SendComDataToNet(int id, void *data, int len)
 
 	return 0;//WANG
 }
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 ///

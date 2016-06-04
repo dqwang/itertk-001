@@ -3,6 +3,7 @@
 #include "mode.h"
 #include "thread.h"
 #include "log.h"
+#include "client.h"
 
 
 int gcomfd[MAX_COM_PORT] = {0};
@@ -306,6 +307,7 @@ void com_para_set(int fd, CONFIG_COM *con_com)
 //////////////////////////////////////////////////////////////////////////
 #define COM_RECV_BUF_MAX (1024*128L)
 
+
 static void com_proc(void* arg)
 {
 	CONFIG_COM *con_com = (CONFIG_COM*)arg;	
@@ -321,7 +323,20 @@ static void com_proc(void* arg)
 				#if 0//just for testing uart
 				write(gcomfd[con_com->id - 1], lsbuf, len);
 				#endif				
+				
+
+				#if 1/**/
 				SendComDataToNet(con_com->id - 1, lsbuf, len);
+				
+				if (g_conf_info.con_com[con_com->id - 1].rsvd[0] == UART_RECV_POLL_MODE){
+					Protocol_SendComDataToNet_PollMode(con_com->id - 1, lsbuf, len);	
+				}else if(g_conf_info.con_com[con_com->id - 1].rsvd[0] == UART_RECV_INT_MODE){
+					Protocol_SendComDataToNet_IntMode(con_com->id - 1, lsbuf, len);
+				}
+				
+				
+				#endif
+				
 			}
 			
 		}else if (rs_type == RS485){

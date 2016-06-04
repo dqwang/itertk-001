@@ -32,6 +32,7 @@ int g_sockfd_client_status = SOCKFD_CLIENT_NULL;
 char buf[1024*1024*2];
 u8 buf_send[1024];
 
+void printf_hex(char *buf, int n);
 
 int check_head(u8 *_buf)
 {
@@ -442,56 +443,103 @@ int make_ack_query_uart_sendbuf(u8* _buf)
 	return 7+1;
 }
 
+u16 g_uart_send_cnt=0;
 
 int check_for_uart_send_data(u8* _buf, u8 _num)
 {
+	
 	if(_num < 8) return ERROR_NUM_IS_NOT_ENOUGH;
 	
 	if(check_protocol_head(_buf,(u8)PROTOCOL_UART_SEND_DATA))
 		return ERROR_HEAD_OR_DEVICE_ID;
-	get_com_attr.id = _buf[4]-1;
 	
-	
-	/*todo forwart to net??*/
-
 	if(check_for_crc(_buf,_num))
-		return ERROR_CRC_CHECK;
-
+			return ERROR_CRC_CHECK;
+	get_com_attr.id = _buf[4]-1;	
+	g_uart_send_cnt=_buf[5]*0x100+_buf[6];
+	
 	return 0;
 }
 
-int make_ack_uart_send_data(u8* _buf)
-
+int  uart_send_data(u8 *_buf)
 {
+	int  ret=0;
+	
+	//get_com_attr.id = _buf[4]-1;	
+	//g_uart_send_cnt=_buf[5]*0x100+_buf[6];	
+	
+	ret=SendNetDataToCom(get_com_attr.id, _buf+7, g_uart_send_cnt);
+	if (ret == -1){
+		ret=0;
+	}
+	return ret;
+}
+
+int make_ack_uart_send_data(u8* _buf)
+{
+	u16 cnt=0;
+	
 	make_ack_head( _buf, PROTOCOL_ACK_UART_SEND_DATA);
 	_buf[4]=get_com_attr.id +1;
 
-	/*TODO*/
-	_buf[5]=0;
-	_buf[6]=0;
+	if (get_com_attr.id >=MAX_COM_PORT ||g_uart_send_cnt ==0 ||g_uart_send_cnt>0x800){
+		_buf[5]=0;
+		_buf[6]=0;
+	}else{
+		cnt=uart_send_data(buf);
+		_buf[5]=cnt/0x100;
+		_buf[6]=cnt%0x100;
+	}	
 	_buf[7]=make_crc_num(_buf, 7);
 	return 7+1;
 }
 
 
+//#define UART_RECV_POLL_MODE 0/*default mode :buffer data*/
+//#define UART_RECV_INT_MODE 1/*send data in real time*/
+
 int check_for_set_uart_recv_attr(u8* _buf, u8 _num)
 {
+	DWORD id;
+	
+	
 	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;
 	
 	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_UART_RECV_ATTR))
-		return ERROR_HEAD_OR_DEVICE_ID;
-	get_com_attr.id = _buf[4]-1;
-
-	/*TODO*/
+		return ERROR_HEAD_OR_DEVICE_ID;	
 
 	if(check_for_crc(_buf,_num))
 		return ERROR_CRC_CHECK;
+	id = _buf[4]-1;
+
+	if (id == 0 ||id ==1){
+		switch(_buf[5]){
+			case UART_RECV_POLL_MODE:
+				g_conf_info.con_com[id].rsvd[0]=UART_RECV_POLL_MODE;
+				break;
+			case UART_RECV_INT_MODE:
+				g_conf_info.con_com[id].rsvd[0]=UART_RECV_INT_MODE;
+				break;
+			default:
+				g_conf_info.con_com[id].rsvd[0]=UART_RECV_POLL_MODE;
+				break;
+		}
+		config_save(&g_conf_info);
+		
+	}
+	
+	sys_log(FUNC, LOG_DBG, "%d\n", g_conf_info.con_com[id].rsvd[0]);
+
 
 	return 0;
 }
 
+#define UART_RECV_BUF_SIZE 0X800
 
-
+u8 uart1_recv_buf[UART_RECV_BUF_SIZE]={0};
+u16 uart1_cnt=0;
+u8 uart2_recv_buf[UART_RECV_BUF_SIZE]={0};
+u16 uart2_cnt=0;
 
 int check_for_query_uart_recv_data(u8* _buf, u8 _num)
 {
@@ -500,7 +548,7 @@ int check_for_query_uart_recv_data(u8* _buf, u8 _num)
 	if(check_protocol_head(_buf,(u8)PROTOCOL_QUERY_UART_RECV_DATA))
 		return ERROR_HEAD_OR_DEVICE_ID;
 	
-	get_com_attr.id = _buf[4]-1;
+	
 	if(check_for_crc(_buf,_num))
 		return ERROR_CRC_CHECK;
 
@@ -510,15 +558,69 @@ int check_for_query_uart_recv_data(u8* _buf, u8 _num)
 int make_ack_query_uart_recv_data(u8* _buf)
 {
 	int recv_size;
-	make_ack_head( _buf, PROTOCOL_QUERY_UART_RECV_DATA);
+	DWORD id=0;
+	make_ack_head( _buf, PROTOCOL_ACK_QUERY_UART_RECV_DATA);
 
-	_buf[4]=get_com_attr.id+1;
-	_buf[5]=0;
-	_buf[6]=0;
-	recv_size=0;
+	id=buf[4]-1;
 	
+	_buf[4]=id+1;
+
+	if (id==0){
+		_buf[5]=uart1_cnt/0x100;
+		_buf[6]=uart1_cnt%0x100;
+		recv_size=uart1_cnt;
+		memcpy(_buf+7, uart1_recv_buf, uart1_cnt);
+	}else if (id==1){
+		_buf[5]=uart2_cnt/0x100;
+		_buf[6]=uart2_cnt%0x100;
+		recv_size=uart2_cnt;
+		memcpy(_buf+7, uart2_recv_buf, uart1_cnt);
+	}else{
+		_buf[5]=0;
+		_buf[6]=0;
+		recv_size=0;
+	}
+		
 	_buf[recv_size+7]=make_crc_num(_buf, recv_size+7);
+
+	/*clear buf*/
 	return recv_size+7+1;
+}
+
+ 
+
+ void  Protocol_SendComDataToNet_PollMode(int id, void *data, int len)
+{	
+	u16 cnt1=0, cnt2=0;
+	if (id==0){
+		cnt1=uart1_cnt;
+		uart1_cnt += len;
+		if (uart1_cnt<UART_RECV_BUF_SIZE){
+			memcpy(uart1_recv_buf+cnt1, data, len);
+		}		
+	}
+
+	if (id==1){
+		cnt1=uart2_cnt;
+		uart2_cnt += len;
+		if (uart2_cnt<UART_RECV_BUF_SIZE){
+			memcpy(uart2_recv_buf+cnt2, data, len);
+		}		
+	}
+}
+
+ void  Protocol_SendComDataToNet_IntMode(int id, void *data, int len)
+{	
+	int num_to_send, ret;
+	Protocol_SendComDataToNet_PollMode(id, data, len);
+	num_to_send = make_ack_query_uart_recv_data(buf_send);
+	
+	ret = write(g_sockfd_client, buf_send, num_to_send);
+	if(ret != num_to_send) 
+		printf("write socket error!\n");
+	sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+	printf_hex(buf_send, num_to_send);
+	
 }
 
 int check_for_get_io_num(u8* _buf, u8 _num)
@@ -528,17 +630,17 @@ int check_for_get_io_num(u8* _buf, u8 _num)
 	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_IO_NUM))
 		return ERROR_HEAD_OR_DEVICE_ID;
 
-
 	if(check_for_crc(_buf,_num))
 		return ERROR_CRC_CHECK;
 
 	return 0;
 }
 
+#define IO_NUM 3
 int make_ack_get_io_num(u8* _buf)
 {
-	make_ack_head( _buf, PROTOCOL_GET_IO_NUM);
-	_buf[4]=3;
+	make_ack_head( _buf, PROTOCOL_ACK_GET_IO_NUM);
+	_buf[4]=IO_NUM;
 	_buf[5]=make_crc_num(_buf, 5);
 	return 5+1;
 }
@@ -563,40 +665,99 @@ int check_for_get_io_status(u8* _buf, u8 _num)
 	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_IO_STATUS))
 		return ERROR_HEAD_OR_DEVICE_ID;
 	
+	sys_log(FUNC, LOG_DBG, "%d\n", buf[4]);
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+	
+int make_ack_get_io_status(u8* _buf)
+{
+	gpio_status gs=GS_LOW;
+
+	make_ack_head( _buf, PROTOCOL_ACK_GET_IO_STATUS);
+	_buf[4]=buf[4];
+	//sys_log(FUNC, LOG_DBG, "%d %d\n", buf[4], _buf[4]);
+	
+	switch(_buf[4]){
+		case 0:
+			get_gpio(OUTPUT_1,&gs);	
+			_buf[5]=(u8)gs;
+			break;
+		case 1:
+			get_gpio(OUTPUT_2, &gs);
+			_buf[5]=(u8)gs;
+			break;
+		case 2:
+			get_gpio(OUTPUT_3, &gs);	
+			_buf[5]=(u8)gs;
+			break;
+		default:
+			_buf[5]=0xff;
+			break;
+	}	
+	
+	//sys_log(FUNC, LOG_DBG, "%d %d %x\n", buf[4], _buf[4], gs);
+	_buf[6]=make_crc_num(_buf, 6);
+	return 6+1;
+}
+
+
+int check_for_get_sensor_type(u8* _buf, u8 _num)
+{
+	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_SENSOR_TYPE))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	
 
 	if(check_for_crc(_buf,_num))
 		return ERROR_CRC_CHECK;
 
 	return 0;
 }
-
-
-	
-int make_ack_get_io_status(u8* _buf)
+#define SENSOR_TYPE_AM2301 0
+int make_ack_get_sensor_type(u8* _buf)
 {
-	make_ack_head( _buf, PROTOCOL_GET_IO_STATUS);
+	make_ack_head( _buf, PROTOCOL_ACK_GET_SENSOR_TYPY);
 	_buf[4]=buf[4];
 
-	switch(buf[4]){
-		case 1:
-			get_gpio(OUTPUT_1,(gpio_status *)&_buf[5]);			
-			break;
-		case 2:
-			get_gpio(OUTPUT_2, (gpio_status *)&_buf[5]);	
-			break;
-		case 3:
-			get_gpio(OUTPUT_3, (gpio_status *)&_buf[5]);	
-			break;
-		default:
-			break;
-	}			
+	_buf[5]=SENSOR_TYPE_AM2301;
+
+	
 	_buf[6]=make_crc_num(_buf, 6);
 	return 6+1;
 }
 
 
+int check_for_get_sensor_data(u8* _buf, u8 _num)
+{
+	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_SENSOR_DATA))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	
 
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
 
+	return 0;
+}
+#define AM2301_DATA_CNT 30
+int make_ack_get_sensor_data(u8* _buf)
+{
+	make_ack_head( _buf, PROTOCOL_ACK_GET_SENSOR_DATA);
+	_buf[4]=buf[4];
+
+	_buf[5]=AM2301_DATA_CNT;
+
+	get_sensor(g_conf_info.con_gpio.sensor);
+	memcpy(_buf+6, g_conf_info.con_gpio.sensor, sizeof (g_conf_info.con_gpio.sensor));
+		
+	_buf[5+30+1]=make_crc_num(_buf, 36);
+	return 36+1;
+}
 
 void printf_hex(char *buf, int n)
 {
@@ -1214,13 +1375,13 @@ void client_process(void)
 					/*TODO*/
 
 					switch(buf[4]){
-						case 1:
+						case 0:
 							set_gpio(OUTPUT_1, GD_OUT,buf[5]);
 							break;
-						case 2:
+						case 1:
 							set_gpio(OUTPUT_2, GD_OUT,buf[5]);
 							break;
-						case 3:
+						case 2:
 							set_gpio(OUTPUT_3, GD_OUT,buf[5]);
 							break;
 						default:
@@ -1243,7 +1404,33 @@ void client_process(void)
 					printf_hex(buf_send, num_to_send);
 				}
 			break;
-						
+			case PROTOCOL_GET_SENSOR_TYPE:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_SENSOR_TYPE");
+				if (!check_for_get_sensor_type(buf, num_read_from_socket)){
+					num_to_send = make_ack_get_sensor_type(buf_send);
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if (ret != num_to_send){
+						printf("write socket error!\n");
+					}
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+
+			case PROTOCOL_GET_SENSOR_DATA:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_SENSOR_DATA");
+				if (!check_for_get_sensor_data(buf, num_read_from_socket)){
+					num_to_send = make_ack_get_sensor_data(buf_send);
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if (ret != num_to_send){
+						printf("write socket error!\n");
+					}
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
 				
 			default:
 				sys_log(FUNC, LOG_ERR, "wrong cmd from server ");

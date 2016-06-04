@@ -36,6 +36,12 @@ enum protocol{
 	PROTOCOL_SET_IO,
 	PROTOCOL_GET_IO_STATUS,
 	PROTOCOL_ACK_GET_IO_STATUS,	
+	
+	PROTOCOL_GET_SENSOR_TYPE=0x1d,
+	PROTOCOL_ACK_GET_SENSOR_TYPY,
+	PROTOCOL_GET_SENSOR_DATA,
+	PROTOCOL_ACK_GET_SENSOR_DATA	
+	
 };
 
 #define PROTOCOL_HEAD_1 0x55
@@ -69,7 +75,10 @@ void client_process(void);
 void client_thread(void);
 int dns_resolution(char * dns_str);
 
+void make_ack_head( u8 * _buf, u8 _protocol_id);
 
+#define UART_RECV_POLL_MODE 0/*default mode :buffer data*/
+#define UART_RECV_INT_MODE 1/*send data in real time*/
 
 #endif/*_CLIENT_H_*/
 
