@@ -79,7 +79,7 @@ int check_for_get_device_attr(u8 * _buf, u8 _num)
 	
 	return 0;
 }
-
+#if 0
 int make_ack_get_device_attr(u8 * _buf)
 {
 	make_ack_head(_buf,(u8)PROTOCOL_ACK_GET_DEVICE_ATTR);
@@ -88,6 +88,60 @@ int make_ack_get_device_attr(u8 * _buf)
 	_buf[6] = make_crc_num(_buf,6);
 	return 7;
 }
+#else
+
+int gen_one_sensor_buf(CONFIG_SENSOR * pcs, u8 * buf)
+{
+   u8 i;
+
+   if (pcs == NULL || buf == NULL){
+      sys_log(FUNC, LOG_ERR , "CONFIG_SENSOR pointer is %p, u8 pointer is %p", pcs, buf);
+      return -1;
+   }
+   buf[0] = pcs->type;
+   buf[1] = pcs->num;
+
+   if (pcs->num == 0){
+      buf[2] = 0;
+      buf[3] = 0;
+      sys_log(FUNC, LOG_ERR, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
+      return 4;
+   }
+   
+   for (i = 0;i < pcs->num; i += 2){
+         buf[2+i] = pcs->seq_num;
+         buf[3+i] = pcs->attr;
+   }
+
+   sys_log(FUNC, LOG_ERR, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
+   return (2 + 2*pcs->num);
+}
+
+
+int gen_all_sensor_buf(u8 *buf)
+{
+   if (buf == NULL){
+      sys_log(FUNC, LOG_ERR, "u8 pointer is %p", buf);
+      return -1;
+   }
+
+   
+   
+}
+
+
+int make_ack_get_device_attr(u8 * _buf)
+{
+   make_ack_head(_buf,(u8)PROTOCOL_ACK_GET_DEVICE_ATTR);
+	_buf[4] = SENSOR_TYPE_NUM;
+
+
+   
+	_buf[5] = 0x00;
+	_buf[6] = make_crc_num(_buf,6);
+	return 7;
+}
+#endif
 int check_for_set_device_attr(u8 * _buf, u8 _num)
 {
 	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;

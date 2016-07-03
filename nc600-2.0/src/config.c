@@ -148,6 +148,8 @@ void config_makedefault ( CONFI_DATA *pConf )
 	pConf->con_gpio.output[0]=1;
 	pConf->con_gpio.output[1]=1;
 	pConf->con_gpio.output[2]=1;
+
+   memset(pConf->con_sensor, 0, sizeof(CONFIG_SENSOR)*MAX_SENSOR_NUM);
 	config_save ( pConf );
 }
 

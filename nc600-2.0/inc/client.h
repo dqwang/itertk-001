@@ -54,7 +54,8 @@ enum protocol{
 #define ERROR_CRC_CHECK			-3
 #define ERROR_DATA_FORMAT		-4
 
-#define HEARTBEAT_TIMEOUT 10
+/*debug*/
+#define HEARTBEAT_TIMEOUT 1000
 
 #define CLIENT_RECONNECT_DURATION 10//s
 #define CLIENT_CONNECT_TIMEOUT 300//ms

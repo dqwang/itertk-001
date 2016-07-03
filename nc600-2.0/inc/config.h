@@ -128,6 +128,24 @@ typedef struct tagCONFIG_SERVER
 	char dns_str[DNS_STR_LEN];
 }CONFIG_SERVER;
 
+
+#define SINGLE_SENSOR_MAX_NUM 8
+#define MAX_SENSOR_NUM 32
+
+#define SENSOR_TYPE_UART 0
+#define SENSOR_TYPE_IO_IN 1
+#define SENSOR_TYPE_IO_OUT 2
+#define SENSOR_TYPE_SINGLE_BUS 3
+
+#define SENSOR_TYPE_NUM 4
+
+typedef struct tagCONFIG_SENSOR{
+   unsigned char type; 
+   unsigned char num;     
+   unsigned char seq_num[SINGLE_SENSOR_MAX_NUM];
+   unsigned char attr[SINGLE_SENSOR_MAX_NUM];
+}CONFIG_SENSOR;
+
 typedef struct tagCONFIG_DATA
 {
 	CONFIG_SYS  con_sys;
@@ -139,6 +157,7 @@ typedef struct tagCONFIG_DATA
 	USR_INFO con_usr[MAX_USR_NUM];
 	CONFIG_SERVER con_server;
 	CONFIG_GPIO con_gpio;
+   CONFIG_SENSOR con_sensor[SENSOR_TYPE_NUM];
 } CONFI_DATA;
 
 

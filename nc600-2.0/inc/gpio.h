@@ -1,10 +1,11 @@
 #ifndef _GPIO_H_
 #define _GPIO_H_
 #include "def.h"
-typedef enum GPIO_NUM{
-	ALARM_IN1 =64, //GPC0
-	ALARM_IN2 =38,//GPB6
-	ALARM_IN3 =37, //GPB5
+typedef enum GPIO_NUM{	
+	ALARM_IN1 =38,//GPB6
+	ALARM_IN2 =37, //GPB5
+	ALARM_IN3 =41, //GPB9
+	
 	ALARM_IN4 =65,//GPC1
 	ALARM_IN5= 66,//GPC2
 	ALARM_IN6=67,//GPC3
@@ -20,10 +21,11 @@ typedef enum GPIO_NUM{
 	PHY_RESET =167, //GPG7   	
 
 	
-	OUTPUT_1=68,//GPC4
-	OUTPUT_2=69,//GPC5
-	OUTPUT_3=96//GPD0
-	
+
+	OUTPUT_1=96,//GPD0
+	OUTPUT_2=42,//GPB10
+	OUTPUT_3=43,//GPB11
+	OUTPUT_4=44,//GPB12
 
 }gpio_num;
 
