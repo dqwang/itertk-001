@@ -196,13 +196,15 @@ int cgiMain()
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
 	show_alarm(3);
+   /*
 	fprintf(cgiOut, "                    </label></td>\n");
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
 	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">Alarm4£º</td>\n");
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
-	show_alarm(4);
+   
+   show_alarm(4);
 	fprintf(cgiOut, "                    </label></td>\n");
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
@@ -231,7 +233,7 @@ int cgiMain()
 	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
 	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
 	show_alarm(8);
-
+   */
 	fprintf(cgiOut, "                    </label></td>\n");
 	fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");

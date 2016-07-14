@@ -27,6 +27,8 @@ typedef enum GPIO_NUM{
 	OUTPUT_3=43,//GPB11
 	OUTPUT_4=44,//GPB12
 
+   TEMP_SENSOR_POWER=163, //GPG3
+
 }gpio_num;
 
 typedef enum GPIO_STATUS{

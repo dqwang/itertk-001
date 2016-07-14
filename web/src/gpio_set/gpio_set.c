@@ -126,6 +126,23 @@ void show_output3(void)
 	fprintf(cgiOut, "                    </select>\n");
 }
 
+void show_output4(void)
+{	
+
+	char *str[2] = {"0","1"};
+	int i;
+	fprintf(cgiOut, "                    <select name=\"output4\" style=\"width:80px\">\n");
+	for(i = 0; i < 2; i++)
+	{
+		if(i == con_gpio.output[3])
+			fprintf(cgiOut, "                      <option selected=\"selected\">%s</option>\n", str[i]);
+		else
+			fprintf(cgiOut, "                      <option>%s</option>\n", str[i]);
+	}
+	fprintf(cgiOut, "                    </select>\n");
+}
+
+
 
 #if 0
 
@@ -190,6 +207,10 @@ int cgiMain()
 
 		cgiFormSelectSingle("output3", str1, sizeof(str1)/sizeof(str1[0]), &i, 0);
 		con_gpio.output[2]= i;
+
+      cgiFormSelectSingle("output4", str1, sizeof(str1)/sizeof(str1[0]), &i, 0);
+		con_gpio.output[3]= i;
+      
 
 		
 
@@ -292,7 +313,8 @@ SHOW:
 	fprintf(cgiOut, "                  <td bgcolor=\"#F7F8F9\">&nbsp;</td>\n");
 	fprintf(cgiOut, "                  <td height=\"30\" bgcolor=\"#F7F8F9\"><label>\n");
 	show_alarm(3);
-	fprintf(cgiOut, "                </tr>\n");
+   /*
+   fprintf(cgiOut, "                </tr>\n");
 	fprintf(cgiOut, "                <tr>\n");
 	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" bgcolor=\"#F7F8F9\" class=\"left_txt2\">Alarm4</td>\n");
 	fprintf(cgiOut, "                  <td bgcolor=\"#F7F8F9\">&nbsp;</td>\n");
@@ -322,7 +344,7 @@ SHOW:
 	fprintf(cgiOut, "                  <td bgcolor=\"#F7F8F9\">&nbsp;</td>\n");
 	fprintf(cgiOut, "                  <td height=\"30\" bgcolor=\"#F7F8F9\"><label>\n");
 	show_alarm(8);
-
+   */
 
 	fprintf(cgiOut, "                    </label></td>\n");
 	fprintf(cgiOut, "                </tr>\n");
@@ -348,7 +370,13 @@ SHOW:
 	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
 	show_output3();
 
-
+   fprintf(cgiOut, "                    </label></td>\n");
+	fprintf(cgiOut, "                </tr>\n");
+	fprintf(cgiOut, "                <tr>\n");
+	fprintf(cgiOut, "                  <td height=\"30\" align=\"right\" class=\"left_txt2\">Output4£º</td>\n");
+	fprintf(cgiOut, "                  <td>&nbsp;</td>\n");
+	fprintf(cgiOut, "                  <td height=\"30\"><label>\n");
+	show_output4();
 
 	fprintf(cgiOut, "                <tr>\n");
 	fprintf(cgiOut, "                  <td height=\"30\" colspan=\"4\" align=\"center\" class=\"left_txt2\"><input type=\"submit\" value=\"ÉèÖÃ\" name=\"setting\" /></td>\n");

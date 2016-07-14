@@ -36,7 +36,7 @@ int cgiMain()
 	cgiHeaderContentType("text/html;charset=gb2312");
 	fprintf(cgiOut, "<HTML><HEAD>\n");
 	//fprintf(cgiOut, "<LINK rel=\"SHORTCUT ICON\" 	href=\"../images/favicon.ico\">\n");
-	fprintf(cgiOut, "<TITLE>NC600 Web Server</TITLE></HEAD>\n");
+	fprintf(cgiOut, "<TITLE>RTNS</TITLE></HEAD>\n");
 	int ret = user_login(name, passwd);
 	if(ret != LOGIN_OK)
 	{

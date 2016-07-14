@@ -385,15 +385,15 @@ void sys_conf_query(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
   case CONF_GPIO:
 	{
 	  	CONFIG_GPIO mygpio;
-		for (i=0;i<8;i++){
+		for (i=0;i<3;i++){
 			mygpio.alarm[i]=g_alarm_in[i];
 		}
 		
-		for (i=0;i<8;i++){
+		for (i=0;i<3;i++){
 			mygpio.alarm_on_off[i] = g_conf_info.con_gpio.alarm_on_off[i];
 		}		
 
-		for(i=0;i<3;i++){
+		for(i=0;i<4;i++){
 			mygpio.output[i]=g_conf_info.con_gpio.output[i];
 		}
 
@@ -469,10 +469,11 @@ int sys_gpio_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 	memcpy(&g_conf_info.con_gpio, &conf_gpio, sizeof(CONFIG_GPIO));
 
 	/*todo*/
-	sys_log(FUNC, LOG_MSG, "OUTPUT 1 2 3:%d, %d, %d", conf_gpio.output[0],conf_gpio.output[1],conf_gpio.output[2]);
+	sys_log(FUNC, LOG_MSG, "OUTPUT 1 2 3 4:%d, %d, %d", conf_gpio.output[0],conf_gpio.output[1],conf_gpio.output[2], conf_gpio.output[3]);
 	set_gpio(OUTPUT_1, GD_OUT,g_conf_info.con_gpio.output[0]);
 	set_gpio(OUTPUT_2, GD_OUT,g_conf_info.con_gpio.output[1]);
 	set_gpio(OUTPUT_3, GD_OUT,g_conf_info.con_gpio.output[2]);
+   set_gpio(OUTPUT_4, GD_OUT,g_conf_info.con_gpio.output[3]);
 	
 	
     	config_save(&g_conf_info);

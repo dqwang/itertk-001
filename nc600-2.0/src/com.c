@@ -406,6 +406,7 @@ void com_set(CONFIG_COM *con_com)
 //////////////////////////////////////////////////////////////////////////
 inline int SendNetDataToCom(int id, void *data, int len)
 {		
+   //sys_log(FUNC, LOG_ERR, "id =%d", id);
 	if (rs_type == RS232)
 		return writen(gcomfd[id], data, len);
 	else if (rs_type == RS485) 

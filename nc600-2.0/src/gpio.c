@@ -19,15 +19,15 @@ u8 g_alarm_in[ALARM_MAX];
 #define GPIO_FLAG 1
 
 #if GPIO_FLAG
-#define GPIO_TOTAL 16
+#define GPIO_TOTAL 18
 unsigned char g_gpio_num[GPIO_TOTAL]={ALARM_IN1, ALARM_IN2, ALARM_IN3, ALARM_IN4, ALARM_IN5, ALARM_IN6,\
 					     ALARM_IN7, ALARM_IN8, CFG_KEY, LED_D1_SYSTEM_STATUS, LED_D2_ALARM_STATUS, \
-					     LED_D3_ALARM_SERVER_STATUS, PHY_RESET, OUTPUT_1, OUTPUT_2, OUTPUT_3};
+					     LED_D3_ALARM_SERVER_STATUS, PHY_RESET, OUTPUT_1, OUTPUT_2, OUTPUT_3,OUTPUT_4, TEMP_SENSOR_POWER};
 unsigned char g_gpio_dir[GPIO_TOTAL]={GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, GD_IN, \
-						                   GD_IN, GD_OUT,GD_OUT,GD_OUT,GD_OUT,GD_OUT,GD_OUT,GD_OUT};
+						                   GD_IN, GD_OUT,GD_OUT,GD_OUT,GD_OUT,GD_OUT,GD_OUT,GD_OUT, GD_OUT,GD_OUT};
 
 unsigned char g_gpio_status[GPIO_TOTAL]={GS_HIGH, GS_HIGH, GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,\
-								        GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH, GS_HIGH,GS_HIGH,GS_HIGH};
+								        GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH, GS_HIGH,GS_HIGH,GS_HIGH,GS_HIGH, GS_HIGH};
 int open_gpio(void)
 {
 	FILE *fp = NULL;
@@ -475,9 +475,12 @@ int init_gpio(void)
 
    	set_gpio(CFG_KEY, GD_IN, GS_HIGH);
 
-	set_gpio(OUTPUT_1, GD_OUT,GS_HIGH);
-	set_gpio(OUTPUT_2, GD_OUT,GS_HIGH);
-	set_gpio(OUTPUT_3, GD_OUT,GS_HIGH);
+	set_gpio(OUTPUT_1, GD_OUT,GS_LOW);
+	set_gpio(OUTPUT_2, GD_OUT,GS_LOW);
+	set_gpio(OUTPUT_3, GD_OUT,GS_LOW);
+   set_gpio(OUTPUT_4, GD_OUT,GS_LOW);
+
+   set_gpio(TEMP_SENSOR_POWER, GD_OUT, GS_HIGH);
 
 	trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
  	trd_create(&gpio_trd, (void*)&system_run_proc, NULL);

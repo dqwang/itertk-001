@@ -4,9 +4,9 @@
 #include "def.h"
 
 
-#define PRODUCT_NAME    "SENSER"
-#define PROGRAM_VERSION "v3.60"
-#define HW_VERSION "YF1402_101_000_003"
+#define PRODUCT_NAME    "RTNS"
+#define PROGRAM_VERSION "v3.70"
+#define HW_VERSION "v1.5"
 
 extern  void sys_version_show ( FILE * stream );
 extern  DWORD sys_str2ip(char *str);

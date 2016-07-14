@@ -120,26 +120,41 @@ int gen_one_sensor_buf(CONFIG_SENSOR * pcs, u8 * buf)
 
 int gen_all_sensor_buf(u8 *buf)
 {
+   int cnt=0;
+   int index=0;
+   
    if (buf == NULL){
       sys_log(FUNC, LOG_ERR, "u8 pointer is %p", buf);
       return -1;
    }
 
    
-   
+   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_UART], buf);
+   index = cnt;
+   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_IN], buf+index);
+   index +=cnt;
+   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_OUT], buf+index);
+   index +=cnt;
+   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_SINGLE_BUS], buf+index);
+   index +=cnt;
+
+   sys_log(FUNC, LOG_DBG, "index is %d", index);
+   return index;   
 }
 
 
 int make_ack_get_device_attr(u8 * _buf)
 {
+   int cnt=0;
+   
    make_ack_head(_buf,(u8)PROTOCOL_ACK_GET_DEVICE_ATTR);
 	_buf[4] = SENSOR_TYPE_NUM;
 
-
+   cnt = gen_all_sensor_buf(buf+4);
    
-	_buf[5] = 0x00;
-	_buf[6] = make_crc_num(_buf,6);
-	return 7;
+	_buf[5+cnt] = 0x00;
+	_buf[6+cnt] = make_crc_num(_buf,6+cnt);
+	return 7+cnt;
 }
 #endif
 int check_for_set_device_attr(u8 * _buf, u8 _num)
