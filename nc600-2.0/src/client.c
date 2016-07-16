@@ -90,52 +90,52 @@ int make_ack_get_device_attr(u8 * _buf)
 }
 #else
 
-int gen_one_sensor_buf(CONFIG_SENSOR * pcs, u8 * buf)
+int get_one_sensor_buf(CONFIG_SENSOR * pcs, u8 * _buf)
 {
-   u8 i;
+   u8 i=0,j=0;
 
-   if (pcs == NULL || buf == NULL){
-      sys_log(FUNC, LOG_ERR , "CONFIG_SENSOR pointer is %p, u8 pointer is %p", pcs, buf);
+   if (pcs == NULL || _buf == NULL){
+      sys_log(FUNC, LOG_ERR , "CONFIG_SENSOR pointer is %p, u8 pointer is %p", pcs, _buf);
       return -1;
    }
-   buf[0] = pcs->type;
-   buf[1] = pcs->num;
+   _buf[0] = pcs->type;
+   _buf[1] = pcs->num;
 
    if (pcs->num == 0){
-      buf[2] = 0;
-      buf[3] = 0;
+      _buf[2] = 0;
+      _buf[3] = 0;
       sys_log(FUNC, LOG_ERR, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
       return 4;
    }
    
-   for (i = 0;i < pcs->num; i += 2){
-         buf[2+i] = pcs->seq_num;
-         buf[3+i] = pcs->attr;
+   for (i = 0, j = 0; j < pcs->num; i += 2,j++){
+         _buf[2+i] = pcs->seq_num[j];
+         _buf[3+i] = pcs->attr[j];
    }
 
-   sys_log(FUNC, LOG_ERR, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
+   sys_log(FUNC, LOG_DBG, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
    return (2 + 2*pcs->num);
 }
 
 
-int gen_all_sensor_buf(u8 *buf)
+int get_all_sensor_buf(u8 *_buf)
 {
    int cnt=0;
    int index=0;
    
-   if (buf == NULL){
-      sys_log(FUNC, LOG_ERR, "u8 pointer is %p", buf);
+   if (_buf == NULL){
+      sys_log(FUNC, LOG_ERR, "u8 pointer is %p", _buf);
       return -1;
    }
 
    
-   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_UART], buf);
+   cnt = get_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_UART], _buf);
    index = cnt;
-   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_IN], buf+index);
+   cnt = get_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_IN], _buf+index);
    index +=cnt;
-   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_OUT], buf+index);
+   cnt = get_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_OUT], _buf+index);
    index +=cnt;
-   cnt = gen_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_SINGLE_BUS], buf+index);
+   cnt = get_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_SINGLE_BUS], _buf+index);
    index +=cnt;
 
    sys_log(FUNC, LOG_DBG, "index is %d", index);
@@ -150,11 +150,11 @@ int make_ack_get_device_attr(u8 * _buf)
    make_ack_head(_buf,(u8)PROTOCOL_ACK_GET_DEVICE_ATTR);
 	_buf[4] = SENSOR_TYPE_NUM;
 
-   cnt = gen_all_sensor_buf(buf+4);
+   cnt = get_all_sensor_buf(_buf+5);
    
 	_buf[5+cnt] = 0x00;
-	_buf[6+cnt] = make_crc_num(_buf,6+cnt);
-	return 7+cnt;
+	_buf[5+cnt] = make_crc_num(_buf,5+cnt);
+	return 6+cnt;
 }
 #endif
 int check_for_set_device_attr(u8 * _buf, u8 _num)
@@ -170,13 +170,71 @@ int check_for_set_device_attr(u8 * _buf, u8 _num)
 	return 0;
 }
 
+int set_one_sensor_buf(u8 * _buf, CONFIG_SENSOR * pcs)
+{
+	u8 i=0, j=0;
+	int ret=0;
+	
+	if (pcs == NULL || _buf == NULL){
+		sys_log(FUNC, LOG_ERR , "CONFIG_SENSOR pointer is %p, u8 pointer is %p", pcs, _buf);
+		return -1;
+	}
+	
+	pcs->num = _buf[0];
+	if (pcs->num == 0){
+		pcs->seq_num[0] = 0;
+		pcs->attr[0] = 0;
+		sys_log(FUNC, LOG_ERR, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
+		return 0;
+	}
+
+	if (pcs->num > SINGLE_SENSOR_MAX_NUM){
+		sys_log(FUNC, LOG_ERR, "CONFIG_SENSOR %d,  num is %d ,overload", pcs->type, pcs->num);
+		return -1;
+	}
+
+	for (i = 0, j = 0; j < pcs->num; i += 2, j++){
+		pcs->seq_num[j] = _buf[1+i];
+		pcs->attr[j] = _buf[2+i];
+
+	}
+
+	sys_log(FUNC, LOG_DBG, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
+	return 0;
+}
+
+void set_alarmin_device_attr(u8* _buf)
+{
+	CONFIG_SENSOR config_alarmin;
+	if (_buf == NULL){
+		return;
+	}
+	memcpy(&config_alarmin, &g_conf_info.con_sensor[SENSOR_TYPE_IO_IN], sizeof(CONFIG_SENSOR));
+
+	set_one_sensor_buf(_buf+4,&config_alarmin);
+
+	memcpy(&g_conf_info.con_sensor[SENSOR_TYPE_IO_IN], &config_alarmin, sizeof(CONFIG_SENSOR));
+
+	config_save(&g_conf_info);
+	
+
+	/*todo:  设置报警属性 与 实际报警处理函数匹配*/
+}
+
+
 int make_ack_set_device_attr(u8 * _buf)
 {
+	u8 cnt=0;
+	u8 tmp[100]={0};
+	/*not include the type byte*/
 	make_ack_head(_buf,(u8)PROTOCOL_ACK_SET_DEVICE_ATTR);
-	_buf[4] = 0x00;
-	_buf[5] = 0x00;
-	_buf[6] = make_crc_num(_buf,6);
-	return 7;
+	
+	cnt = get_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_IN], tmp);
+	printf_hex(tmp,cnt);
+	memcpy(_buf+4, tmp+1, cnt-1);
+	_buf[4+cnt-1] = make_crc_num(_buf, 4+cnt-1);
+
+	return 4+cnt;
 }
 
 
@@ -1277,6 +1335,11 @@ void client_process(void)
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_DEVICE_ATTR");
 				if(!check_for_set_device_attr(buf,num_read_from_socket))
 				{
+					/*todo set device attr
+						传感器有好几类，此处只处理报警传感器
+					*/
+					set_alarmin_device_attr(buf);
+				
 					num_to_send = make_ack_set_device_attr(buf_send);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
 					if(ret != num_to_send)

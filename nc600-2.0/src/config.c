@@ -149,7 +149,13 @@ void config_makedefault ( CONFI_DATA *pConf )
 	pConf->con_gpio.output[1]=1;
 	pConf->con_gpio.output[2]=1;
 
-   memset(pConf->con_sensor, 0, sizeof(CONFIG_SENSOR)*MAX_SENSOR_NUM);
+   memset(pConf->con_sensor, 0, sizeof(pConf->con_sensor));
+   pConf->con_sensor[SENSOR_TYPE_UART].type = SENSOR_TYPE_UART;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].type = SENSOR_TYPE_IO_IN;
+   pConf->con_sensor[SENSOR_TYPE_IO_OUT].type = SENSOR_TYPE_IO_OUT;
+   pConf->con_sensor[SENSOR_TYPE_SINGLE_BUS].type = SENSOR_TYPE_SINGLE_BUS;
+   
+   
 	config_save ( pConf );
 }
 
