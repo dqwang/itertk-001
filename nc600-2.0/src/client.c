@@ -15,7 +15,11 @@
 #include <errno.h>
 
 CONFIG_COM get_com_attr;
+CONFIG_COM get_com_attr_max[MAX_COM_PORT];
+
 CONFIG_COM set_com_attr;
+CONFIG_COM set_com_attr_max[MAX_COM_PORT];
+
 
 
 extern u8 g_alarm_in[ALARM_MAX];
@@ -33,6 +37,11 @@ char buf[1024*1024*2];
 u8 buf_send[1024];
 
 void printf_hex(char *buf, int n);
+
+
+#define SET_MSB(value) (value|0x80)
+#define RESET_MSB(value) (value&(~0x80))
+
 
 int check_head(u8 *_buf)
 {
@@ -192,7 +201,7 @@ int set_one_sensor_buf(u8 * _buf, CONFIG_SENSOR * pcs)
 		sys_log(FUNC, LOG_ERR, "CONFIG_SENSOR %d,  num is %d ,overload", pcs->type, pcs->num);
 		return -1;
 	}
-
+	/*TODO 需要处理报警开关与seq_num关系*/
 	for (i = 0, j = 0; j < pcs->num; i += 2, j++){
 		pcs->seq_num[j] = _buf[1+i];
 		pcs->attr[j] = _buf[2+i];
@@ -230,7 +239,7 @@ int make_ack_set_device_attr(u8 * _buf)
 	make_ack_head(_buf,(u8)PROTOCOL_ACK_SET_DEVICE_ATTR);
 	
 	cnt = get_one_sensor_buf(&g_conf_info.con_sensor[SENSOR_TYPE_IO_IN], tmp);
-	printf_hex(tmp,cnt);
+	//printf_hex(tmp,cnt);
 	memcpy(_buf+4, tmp+1, cnt-1);
 	_buf[4+cnt-1] = make_crc_num(_buf, 4+cnt-1);
 
@@ -253,19 +262,32 @@ int check_for_get_alarm_status(u8 * _buf, u8 _num)
 
 int make_ack_get_alarm_status(u8 * _buf, u8 alarm_in[])
 {
+	u8 i=0,j=0;
+
 	make_ack_head(_buf,(u8)PROTOCOL_ACK_GET_ALARM_STATUS);
-	_buf[4+ALARM_SUFFIX0] = alarm_in[ALARM_SUFFIX0];
-	_buf[4+ALARM_SUFFIX1] = alarm_in[ALARM_SUFFIX1];
-	_buf[4+ALARM_SUFFIX2] = alarm_in[ALARM_SUFFIX2];
-	_buf[4+ALARM_SUFFIX3] = alarm_in[ALARM_SUFFIX3];
-	_buf[4+ALARM_SUFFIX4] = alarm_in[ALARM_SUFFIX4];
-	_buf[4+ALARM_SUFFIX5] = alarm_in[ALARM_SUFFIX5];
-	_buf[4+ALARM_SUFFIX6] = alarm_in[ALARM_SUFFIX6];
-	_buf[4+ALARM_SUFFIX7] = alarm_in[ALARM_SUFFIX7];
+
+	_buf[4] = g_conf_info.con_sensor[SENSOR_TYPE_IO_IN].num;
+
+	
+	for (i=0,j=0; j<_buf[4]; i+=2,j++){
+		_buf[5+i] = g_conf_info.con_sensor[SENSOR_TYPE_IO_IN].seq_num[j];
+		_buf[6+i] = alarm_in[j];
+	}
 	
 	
-	_buf[4+ALARM_MAX] = make_crc_num(_buf, (4+ALARM_MAX));
-	return (4+ALARM_MAX+1);
+	
+	//_buf[4+ALARM_SUFFIX0] = alarm_in[ALARM_SUFFIX0];
+	//_buf[4+ALARM_SUFFIX1] = alarm_in[ALARM_SUFFIX1];
+	//_buf[4+ALARM_SUFFIX2] = alarm_in[ALARM_SUFFIX2];
+	//_buf[4+ALARM_SUFFIX3] = alarm_in[ALARM_SUFFIX3];
+	//_buf[4+ALARM_SUFFIX4] = alarm_in[ALARM_SUFFIX4];
+	//_buf[4+ALARM_SUFFIX5] = alarm_in[ALARM_SUFFIX5];
+	//_buf[4+ALARM_SUFFIX6] = alarm_in[ALARM_SUFFIX6];
+	//_buf[4+ALARM_SUFFIX7] = alarm_in[ALARM_SUFFIX7];
+	
+	
+	_buf[5+j*2] = make_crc_num(_buf, (5+j*2));
+	return (5+j*2+1);
 }
 
 int check_for_set_time(u8 * _buf, u8 _num)
@@ -339,23 +361,6 @@ int make_ack_get_uart_qty(u8 * _buf)
 
 #define INVALID_ID 0xff
 
-int check_for_get_uart_attr(u8* _buf, u8 _num)
-{
-	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
-	
-	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_UART_ATTR))
-		return ERROR_HEAD_OR_DEVICE_ID;
-	if (_buf[4]==1 || _buf[4] ==2){
-		get_com_attr.id=_buf[4]-1;
-	}else{
-		get_com_attr.id=_buf[4];
-	}
-
-	if(check_for_crc(_buf,_num))
-		return ERROR_CRC_CHECK;
-
-	return 0;
-}
 
 #define calc_high_byte(x) (x/0x10000)
 #define calc_mid_byte(x) (x%0x10000/0x100)
@@ -391,59 +396,6 @@ u8 return_remote_odd_even(u8 local_oddeven)
 			break;
 	}	
 	return -1;
-}
-
-
-
-int make_ack_get_uart_attr(u8* _buf)
-{
-	make_ack_head(_buf, PROTOCOL_ACK_GET_UART_ATTR);
-	
-	if (get_com_attr.id <2){
-		_buf[4]=get_com_attr.id+1;
-		
-		memcpy(&get_com_attr,  &g_conf_info.con_com[get_com_attr.id], sizeof(CONFIG_COM));
-			
-		
-		_buf[5]=calc_high_byte(get_com_attr.bps);
-		_buf[6]=calc_mid_byte(get_com_attr.bps);
-		_buf[7]=calc_low_byte(get_com_attr.bps);
-		_buf[8]=get_com_attr.dbit;
-		_buf[9]=get_com_attr.sbit;
-
-		_buf[10]=return_remote_odd_even(get_com_attr.chk);
-		
-	}else{
-		_buf[4]=get_com_attr.id;
-		_buf[5]=0;
-		_buf[6]=0;
-		_buf[7]=0;
-		_buf[8]=0;
-		_buf[9]=0;
-		_buf[10]=0;
-	}	
-	_buf[11]=make_crc_num(_buf, 11);
-	return 12;
-}
-
-
-int check_for_set_uart_attr(u8* _buf, u8 _num)
-{
-	if(_num < 12) return ERROR_NUM_IS_NOT_ENOUGH;
-	
-	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_UART_ATTR))
-		return ERROR_HEAD_OR_DEVICE_ID;
-
-	set_com_attr.id=_buf[4]-1;
-	set_com_attr.bps = calc_baud_rate(_buf[5], _buf[6], _buf[7]);
-	set_com_attr.dbit = _buf[8];
-	set_com_attr.sbit = _buf[9];
-	set_com_attr.chk =return_local_odd_even( _buf[10]);
-
-	if(check_for_crc(_buf,_num))
-		return ERROR_CRC_CHECK;
-
-	return 0;
 }
 
 #define SET_UART_ATTR_PASS 1
@@ -520,6 +472,79 @@ u8  is_good_uart(CONFIG_COM * pcom)
 	return SET_UART_ATTR_PASS;
 }
 
+#if 0
+int check_for_get_uart_attr(u8* _buf, u8 _num)
+{
+	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_UART_ATTR))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	if (_buf[4]==1 || _buf[4] ==2){
+		get_com_attr.id=_buf[4]-1;
+	}else{
+		get_com_attr.id=_buf[4];
+	}
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+
+
+int make_ack_get_uart_attr(u8* _buf)
+{
+	make_ack_head(_buf, PROTOCOL_ACK_GET_UART_ATTR);
+	
+	if (get_com_attr.id <2){
+		_buf[4]=get_com_attr.id+1;
+		
+		memcpy(&get_com_attr,  &g_conf_info.con_com[get_com_attr.id], sizeof(CONFIG_COM));
+			
+		
+		_buf[5]=calc_high_byte(get_com_attr.bps);
+		_buf[6]=calc_mid_byte(get_com_attr.bps);
+		_buf[7]=calc_low_byte(get_com_attr.bps);
+		_buf[8]=get_com_attr.dbit;
+		_buf[9]=get_com_attr.sbit;
+
+		_buf[10]=return_remote_odd_even(get_com_attr.chk);
+		
+	}else{
+		_buf[4]=get_com_attr.id;
+		_buf[5]=0;
+		_buf[6]=0;
+		_buf[7]=0;
+		_buf[8]=0;
+		_buf[9]=0;
+		_buf[10]=0;
+	}	
+	_buf[11]=make_crc_num(_buf, 11);
+	return 12;
+}
+
+
+int check_for_set_uart_attr(u8* _buf, u8 _num)
+{
+	if(_num < 12) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_UART_ATTR))
+		return ERROR_HEAD_OR_DEVICE_ID;
+
+	set_com_attr.id=_buf[4]-1;
+	set_com_attr.bps = calc_baud_rate(_buf[5], _buf[6], _buf[7]);
+	set_com_attr.dbit = _buf[8];
+	set_com_attr.sbit = _buf[9];
+	set_com_attr.chk =return_local_odd_even( _buf[10]);
+
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+
 
 int make_ack_set_uart_attr(u8* _buf)
 {
@@ -545,6 +570,172 @@ int make_ack_set_uart_attr(u8* _buf)
 	return 7;
 }
 
+#else
+int check_for_get_uart_attr(u8* _buf, u8 _num)
+{
+	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_UART_ATTR))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+int make_ack_get_uart_attr(u8* ackbuf, u8*cmdbuf)
+{
+	CONFIG_SENSOR config_uart;
+	int i=0,j=0;
+	u8 com_index=0;
+
+	/*
+	1. init config_uart using g_conf_info
+	2. set 2 uart (get_com_attr_max) using config_uart and g_conf_info 
+	3. packet the data to ackbuf
+	*/
+	make_ack_head(ackbuf, PROTOCOL_ACK_GET_UART_ATTR);
+
+	memcpy(&config_uart, &g_conf_info.con_sensor[SENSOR_TYPE_UART], sizeof(CONFIG_SENSOR));
+	memcpy(get_com_attr_max, g_conf_info.con_com, sizeof(CONFIG_COM)*MAX_COM_PORT);
+
+	if (config_uart.num == 1){
+		ackbuf[4]=cmdbuf[4];
+		ackbuf[5]=RESET_MSB(config_uart.seq_num[0]);
+		com_index=RESET_MSB(config_uart.seq_num[0])-1;
+		ackbuf[6]=config_uart.attr[0];
+		ackbuf[7]=calc_high_byte(get_com_attr_max[com_index].bps);
+		ackbuf[8]=calc_mid_byte(get_com_attr_max[com_index].bps);
+		ackbuf[9]=calc_low_byte(get_com_attr_max[com_index].bps);
+		ackbuf[10]=get_com_attr_max[com_index].dbit;
+		ackbuf[11]=get_com_attr_max[com_index].sbit;
+		ackbuf[12]=return_remote_odd_even(get_com_attr_max[com_index].chk);
+		ackbuf[13]=make_crc_num(ackbuf, 13);
+		return 14;
+		
+	}else if (config_uart.num == 2){
+
+		ackbuf[4] =cmdbuf[4];
+		for(i = 0,j = 0; j < config_uart.num; j++, i+=8){
+			ackbuf[5+i]=RESET_MSB(config_uart.seq_num[j]);
+
+			com_index=RESET_MSB(config_uart.seq_num[j])-1;
+
+			ackbuf[6+i]=config_uart.attr[j];
+			ackbuf[7+i]=calc_high_byte(get_com_attr_max[com_index].bps);
+			ackbuf[8+i]=calc_mid_byte(get_com_attr_max[com_index].bps);
+			ackbuf[9+i]=calc_low_byte(get_com_attr_max[com_index].bps);
+			ackbuf[10+i]=get_com_attr_max[com_index].dbit;
+			ackbuf[11+i]=get_com_attr_max[com_index].sbit;
+			ackbuf[12+i]=return_remote_odd_even(get_com_attr_max[com_index].chk);	
+		
+		}
+		ackbuf[5+8*j]=make_crc_num(ackbuf, 5+8*j);
+		return 5+8*j+1;
+
+	}else{
+		ackbuf[4]=cmdbuf[4];
+		ackbuf[5]=0;
+		ackbuf[6]=0;
+		ackbuf[7]=0;
+		ackbuf[8]=0;
+		ackbuf[9]=0;
+		ackbuf[10]=0;
+		ackbuf[11]=0;
+		ackbuf[12]=0;
+
+		ackbuf[13]=make_crc_num(ackbuf, 13);
+		return 14;
+	}
+	
+	
+}
+
+
+int check_for_set_uart_attr(u8* _buf, u8 _num)
+{
+	if(_num < 14) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_UART_ATTR))
+		return ERROR_HEAD_OR_DEVICE_ID;
+
+/*
+	set_com_attr.id=_buf[4]-1;
+	set_com_attr.bps = calc_baud_rate(_buf[5], _buf[6], _buf[7]);
+	set_com_attr.dbit = _buf[8];
+	set_com_attr.sbit = _buf[9];
+	set_com_attr.chk =return_local_odd_even( _buf[10]);
+*/
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+
+
+int make_ack_set_uart_attr(u8* ackbuf, u8* cmdbuf)
+{
+	CONFIG_SENSOR config_uart;
+	u8 i=0, j=0;
+	
+	make_ack_head( ackbuf, PROTOCOL_ACK_SET_UART_ATTR);
+	memcpy(&config_uart, &g_conf_info.con_sensor[SENSOR_TYPE_UART], sizeof(CONFIG_SENSOR));
+	memcpy(set_com_attr_max, g_conf_info.con_com, sizeof(g_conf_info.con_com));
+
+	if (cmdbuf[4]>=1 && cmdbuf[4]<=MAX_COM_PORT){		
+		config_uart.num = cmdbuf[4];
+	}else{
+		goto error;
+	}
+
+	ackbuf[4]=config_uart.num;
+
+	
+	for (i = 0, j = 0; j< config_uart.num; j++, i += 8){
+		set_com_attr_max[j].id = RESET_MSB(cmdbuf[5+i]);
+		if (set_com_attr_max[j].id >2){
+			goto error;
+		}
+		config_uart.seq_num[j] = cmdbuf[5+i];
+		config_uart.attr[j] = cmdbuf[6+i];
+		
+		set_com_attr_max[j].bps = calc_baud_rate(cmdbuf[7+i], cmdbuf[8+i], cmdbuf[9+i]);
+		set_com_attr_max[j].dbit = cmdbuf[10+i];
+		set_com_attr_max[j].sbit = cmdbuf[11+i];
+		set_com_attr_max[j].chk =return_local_odd_even( cmdbuf[12+i]);
+
+		if (is_good_uart(&set_com_attr_max[j]) != SET_UART_ATTR_PASS){
+			goto error;
+		}
+
+		memcpy(&g_conf_info.con_com[set_com_attr_max[j].id-1], &set_com_attr_max[j], sizeof(CONFIG_COM));
+		memcpy(&g_conf_info.con_sensor[j], &config_uart, sizeof(CONFIG_SENSOR));
+
+		
+		/*still available if reboot*/
+		config_save(&g_conf_info);
+		/*set com*/
+		com_set(&set_com_attr_max[j]);
+
+		ackbuf[5+2*j]=config_uart.seq_num[j];
+		ackbuf[6+2*j]=SET_UART_ATTR_PASS;
+		
+	}
+
+	
+	ackbuf[5+2*j]=make_crc_num(ackbuf, 5+2*j);
+	return 5+2*j+1;
+error:
+	ackbuf[4]=cmdbuf[4];
+	ackbuf[5]=0x00;
+	ackbuf[6]=SET_UART_ATTR_FAIL;
+	ackbuf[7]=make_crc_num(ackbuf, 7);
+	return 8;
+}
+
+
+#endif
 int check_for_query_uart_sendbuf(u8* _buf, u8 _num)
 {
 	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
@@ -763,18 +954,18 @@ int check_for_get_io_num(u8* _buf, u8 _num)
 	return 0;
 }
 
-#define IO_NUM 3
+#define IO_OUT_NUM 4
 int make_ack_get_io_num(u8* _buf)
 {
 	make_ack_head( _buf, PROTOCOL_ACK_GET_IO_NUM);
-	_buf[4]=IO_NUM;
+	_buf[4]=IO_OUT_NUM;//g_conf_info.con_sensor[SENSOR_TYPE_IO_OUT].num;
 	_buf[5]=make_crc_num(_buf, 5);
 	return 5+1;
 }
 
 int check_for_set_io(u8* _buf, u8 _num)
 {
-	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;
+	if(_num < 8) return ERROR_NUM_IS_NOT_ENOUGH;
 	
 	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_IO))
 		return ERROR_HEAD_OR_DEVICE_ID;
@@ -784,10 +975,52 @@ int check_for_set_io(u8* _buf, u8 _num)
 	return 0;
 }
 
+void set_io_out(u8* cmdbuf)
+{
+	CONFIG_SENSOR config_io_out;
+	u8 i=0,j=0;
+	
+	config_io_out.type = SENSOR_TYPE_IO_OUT;
+	config_io_out.num = cmdbuf[4];
+
+	if (config_io_out.num == 0 && config_io_out.num > IO_OUT_NUM){
+		return;
+	}	
+
+	for (i = 0, j = 0; j < config_io_out.num; j++,i += 2){
+		config_io_out.seq_num[j] = cmdbuf[5+i];
+		config_io_out.attr[j] = cmdbuf[6+i];
+
+		switch(config_io_out.seq_num[j]){
+			case 1:
+				set_gpio(OUTPUT_1, GD_OUT,config_io_out.attr[j]);
+				break;
+			case 2:
+				set_gpio(OUTPUT_2, GD_OUT,config_io_out.attr[j]);
+				break;
+			case 3:
+				set_gpio(OUTPUT_3, GD_OUT,config_io_out.attr[j]);
+				break;
+			case 4:
+				set_gpio(OUTPUT_4, GD_OUT,config_io_out.attr[j]);
+				break;
+			
+			default:
+				break;
+		}
+		
+	}
+		
+	memcpy(&g_conf_info.con_sensor[SENSOR_TYPE_IO_OUT], &config_io_out, sizeof(CONFIG_SENSOR));
+
+	config_save(&g_conf_info);
+
+	
+}
 
 int check_for_get_io_status(u8* _buf, u8 _num)
 {
-	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
+	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;
 	
 	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_IO_STATUS))
 		return ERROR_HEAD_OR_DEVICE_ID;
@@ -799,38 +1032,156 @@ int check_for_get_io_status(u8* _buf, u8 _num)
 	return 0;
 }
 	
-int make_ack_get_io_status(u8* _buf)
+int make_ack_get_io_status(u8* ackbuf, u8* cmdbuf)
 {
 	gpio_status gs=GS_LOW;
+	u8 i=0,j=0;
+	CONFIG_SENSOR  config_io_out;
 
-	make_ack_head( _buf, PROTOCOL_ACK_GET_IO_STATUS);
-	_buf[4]=buf[4];
-	//sys_log(FUNC, LOG_DBG, "%d %d\n", buf[4], _buf[4]);
+	make_ack_head( ackbuf, PROTOCOL_ACK_GET_IO_STATUS);
+
 	
-	switch(_buf[4]){
-		case 0:
-			get_gpio(OUTPUT_1,&gs);	
-			_buf[5]=(u8)gs;
-			break;
-		case 1:
-			get_gpio(OUTPUT_2, &gs);
-			_buf[5]=(u8)gs;
-			break;
-		case 2:
-			get_gpio(OUTPUT_3, &gs);	
-			_buf[5]=(u8)gs;
-			break;
-		default:
-			_buf[5]=0xff;
-			break;
-	}	
+	config_io_out.num = cmdbuf[4];
+	
+	ackbuf[4]=config_io_out.num;
+
+	if (config_io_out.num == 0 || config_io_out.num > IO_OUT_NUM){
+		sys_log(FUNC, LOG_ERR, "config_io_out.num %d\n", config_io_out.num);
+		return;
+	}
+
+	for (i=0,j=0; j < config_io_out.num; j++, i+=2){
+		config_io_out.seq_num[j] = cmdbuf[5+j];
+		
+
+		ackbuf[5+i] = config_io_out.seq_num[j];
+		switch(config_io_out.seq_num[j]){
+			case 1:
+				get_gpio(OUTPUT_1,&gs);	
+				ackbuf[6+i]=(u8)gs;
+				break;
+			case 2:
+				get_gpio(OUTPUT_2, &gs);
+				ackbuf[6+i]=(u8)gs;
+				break;
+			case 3:
+				get_gpio(OUTPUT_3, &gs);	
+				ackbuf[6+i]=(u8)gs;
+				break;
+			case 4:
+				get_gpio(OUTPUT_4, &gs);
+				ackbuf[6+i]=(u8)gs;
+				break;
+			default:
+				ackbuf[6+i]=0xff;
+				break;
+		}
+		config_io_out.attr[j] = ackbuf[6+i];
+	}
+	
+	
 	
 	//sys_log(FUNC, LOG_DBG, "%d %d %x\n", buf[4], _buf[4], gs);
-	_buf[6]=make_crc_num(_buf, 6);
-	return 6+1;
+	ackbuf[5+2*j]=make_crc_num(ackbuf, 5+2*j);
+	return 5+2*j+1;
+}
+
+int check_for_get_temp_num(u8* _buf, u8 _num)
+{
+	if(_num < 5) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_TEMP_NUM))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+#define TEMP_NUM 1
+int make_ack_get_temp_num(u8*ackbuf)
+{
+	make_ack_head( ackbuf, PROTOCOL_ACK_GET_TEMP_NUM);
+	ackbuf[4] = TEMP_NUM;
+	ackbuf[5]=make_crc_num(ackbuf, 5);
+	return 5+1;
+}
+
+void set_temp(u8* cmdbuf)
+{
+	CONFIG_SENSOR config_temp;
+	u8 i=0,j=0;
+	
+	config_temp.type = SENSOR_TYPE_SINGLE_BUS;
+	config_temp.num = cmdbuf[4];
+
+	if (config_temp.num == 0 && config_temp.num > TEMP_NUM){
+		sys_log(FUNC, LOG_ERR, "config_temp.num %d\n", config_temp.num);
+		return;
+	}
+	config_temp.seq_num[0] = cmdbuf[5];
+	config_temp.attr[0] = cmdbuf[6];		
+	
+	memcpy(&g_conf_info.con_sensor[SENSOR_TYPE_SINGLE_BUS], &config_temp, sizeof(CONFIG_SENSOR));
+
+	config_save(&g_conf_info);
+
+	
+}
+
+int check_for_get_temp_status(u8* _buf, u8 _num)
+{
+	if(_num < 7) return ERROR_NUM_IS_NOT_ENOUGH;
+	
+	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_TEMP_STATUS))
+		return ERROR_HEAD_OR_DEVICE_ID;
+	
+	if(check_for_crc(_buf,_num))
+		return ERROR_CRC_CHECK;
+
+	return 0;
+}
+
+#define AM2301_DATA_CNT 30 
+
+
+#define INDEX_T100 0
+#define INDEX_T10 1
+#define INDEX_T1 3
+
+#define INDEX_H100 7
+#define INDEX_H10 8
+#define INDEX_H1 10
+
+int make_ack_get_temp_status(u8*ackbuf)
+{
+	u16 hum=0;
+	u16 temp=0;
+	
+	char am2301_buf[AM2301_DATA_CNT];
+	get_sensor(am2301_buf);
+	printf_hex(am2301_buf,AM2301_DATA_CNT);
+
+	/*change ascii to num*/
+	hum = (am2301_buf[INDEX_H100]-0x30)*100 + (am2301_buf[INDEX_H10]-0x30)*10 + (am2301_buf[INDEX_H1]-0x30);
+	temp = (am2301_buf[INDEX_T100]-0x30)*100 + (am2301_buf[INDEX_T10]-0x30)*10 + (am2301_buf[INDEX_T1]-0x30);
+
+	make_ack_head( ackbuf, PROTOCOL_ACK_GET_TEMP_STATUS);
+	ackbuf[4] = TEMP_NUM;
+	ackbuf[5] = TEMP_NUM;
+
+	ackbuf[6] = hum/0x100;
+	ackbuf[7] = hum%0x100;
+	ackbuf[8] = temp/0x100;
+	ackbuf[9] = temp%0x100;
+	
+	ackbuf[10]=make_crc_num(ackbuf, 10);
+	return 11;
 }
 
 
+#if 0
 int check_for_get_sensor_type(u8* _buf, u8 _num)
 {
 	if(_num < 6) return ERROR_NUM_IS_NOT_ENOUGH;
@@ -885,6 +1236,7 @@ int make_ack_get_sensor_data(u8* _buf)
 	_buf[5+30+1]=make_crc_num(_buf, 36);
 	return 36+1;
 }
+#endif
 
 void printf_hex(char *buf, int n)
 {
@@ -1352,6 +1704,8 @@ void client_process(void)
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_ALARM_STATUS");
 				if(!check_for_get_alarm_status(buf,num_read_from_socket))
 				{					
+					/*alarmin*/
+					
 					num_to_send = make_ack_get_alarm_status(buf_send, g_alarm_in);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
 					if(ret != num_to_send) 
@@ -1411,7 +1765,7 @@ void client_process(void)
 			case PROTOCOL_GET_UART_ATTR:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_UART_ATTR");
 				if (!check_for_get_uart_attr(buf, num_read_from_socket)){
-					num_to_send = make_ack_get_uart_attr(buf_send);
+					num_to_send = make_ack_get_uart_attr(buf_send, buf);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
 					if(ret != num_to_send) 
 						printf("write socket error!\n");
@@ -1423,7 +1777,7 @@ void client_process(void)
 			case PROTOCOL_SET_UART_ATTR:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_UART_ATTR");
 				if (!check_for_set_uart_attr(buf, num_read_from_socket)){
-					num_to_send=make_ack_set_uart_attr(buf_send);
+					num_to_send=make_ack_set_uart_attr(buf_send,buf);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
 					if(ret != num_to_send) 
 						printf("write socket error!\n");
@@ -1506,19 +1860,7 @@ void client_process(void)
 					
 					/*TODO*/
 
-					switch(buf[4]){
-						case 0:
-							set_gpio(OUTPUT_1, GD_OUT,buf[5]);
-							break;
-						case 1:
-							set_gpio(OUTPUT_2, GD_OUT,buf[5]);
-							break;
-						case 2:
-							set_gpio(OUTPUT_3, GD_OUT,buf[5]);
-							break;
-						default:
-							break;
-					}					
+					set_io_out(buf);					
 				}
 			break;
 
@@ -1526,7 +1868,7 @@ void client_process(void)
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_IO_STATUS");
 				if (!check_for_get_io_status(buf, num_read_from_socket)){
 								
-					num_to_send = make_ack_get_io_status(buf_send);
+					num_to_send = make_ack_get_io_status(buf_send, buf);
 
 
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1536,6 +1878,45 @@ void client_process(void)
 					printf_hex(buf_send, num_to_send);
 				}
 			break;
+
+			case PROTOCOL_GET_TEMP_NUM:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_TEMP_NUM");
+				if (!check_for_get_temp_num(buf, num_read_from_socket)){
+								
+					num_to_send = make_ack_get_temp_num(buf_send);
+
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+
+			case PROTOCOL_SET_TEMP:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_TEMP");
+
+				set_temp(buf);
+			
+			break;
+
+			case PROTOCOL_GET_TEMP_STATUS:
+				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_TEMP_STATUS");
+				if (!check_for_get_temp_status(buf, num_read_from_socket)){
+								
+					num_to_send = make_ack_get_temp_status(buf_send);
+
+
+					ret = write(g_sockfd_client, buf_send, num_to_send);
+					if(ret != num_to_send) 
+						printf("write socket error!\n");
+					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
+					printf_hex(buf_send, num_to_send);
+				}
+			break;
+
+#if 0
 			case PROTOCOL_GET_SENSOR_TYPE:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_SENSOR_TYPE");
 				if (!check_for_get_sensor_type(buf, num_read_from_socket)){
@@ -1563,7 +1944,7 @@ void client_process(void)
 					printf_hex(buf_send, num_to_send);
 				}
 			break;
-				
+#endif			
 			default:
 				sys_log(FUNC, LOG_ERR, "wrong cmd from server ");
 				break;				
