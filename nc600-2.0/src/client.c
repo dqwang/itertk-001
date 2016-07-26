@@ -121,7 +121,7 @@ int get_one_sensor_buf(CONFIG_SENSOR * pcs, u8 * _buf)
          _buf[2+i] = pcs->seq_num[j];
          _buf[3+i] = pcs->attr[j];
    }
-
+	printf_hex(_buf, 2 + 2*pcs->num);
    sys_log(FUNC, LOG_DBG, "CONFIG_SENSOR %d,  num is %d", pcs->type, pcs->num);
    return (2 + 2*pcs->num);
 }
@@ -710,7 +710,7 @@ int make_ack_set_uart_attr(u8* ackbuf, u8* cmdbuf)
 		}
 
 		memcpy(&g_conf_info.con_com[set_com_attr_max[j].id-1], &set_com_attr_max[j], sizeof(CONFIG_COM));
-		memcpy(&g_conf_info.con_sensor[j], &config_uart, sizeof(CONFIG_SENSOR));
+		memcpy(&g_conf_info.con_sensor[SENSOR_TYPE_UART], &config_uart, sizeof(CONFIG_SENSOR));
 
 		
 		/*still available if reboot*/
@@ -965,7 +965,7 @@ int make_ack_get_io_num(u8* _buf)
 
 int check_for_set_io(u8* _buf, u8 _num)
 {
-	if(_num < 8) return ERROR_NUM_IS_NOT_ENOUGH;
+	if(_num < 9) return ERROR_NUM_IS_NOT_ENOUGH;
 	
 	if(check_protocol_head(_buf,(u8)PROTOCOL_SET_IO))
 		return ERROR_HEAD_OR_DEVICE_ID;
@@ -987,22 +987,22 @@ void set_io_out(u8* cmdbuf)
 		return;
 	}	
 
-	for (i = 0, j = 0; j < config_io_out.num; j++,i += 2){
+	for (i = 0, j = 0; j < config_io_out.num; j++,i += 3){
 		config_io_out.seq_num[j] = cmdbuf[5+i];
 		config_io_out.attr[j] = cmdbuf[6+i];
 
 		switch(config_io_out.seq_num[j]){
 			case 1:
-				set_gpio(OUTPUT_1, GD_OUT,config_io_out.attr[j]);
+				set_gpio(OUTPUT_1, GD_OUT,cmdbuf[7+i]);
 				break;
 			case 2:
-				set_gpio(OUTPUT_2, GD_OUT,config_io_out.attr[j]);
+				set_gpio(OUTPUT_2, GD_OUT,cmdbuf[7+i]);
 				break;
 			case 3:
-				set_gpio(OUTPUT_3, GD_OUT,config_io_out.attr[j]);
+				set_gpio(OUTPUT_3, GD_OUT,cmdbuf[7+i]);
 				break;
 			case 4:
-				set_gpio(OUTPUT_4, GD_OUT,config_io_out.attr[j]);
+				set_gpio(OUTPUT_4, GD_OUT,cmdbuf[7+i]);
 				break;
 			
 			default:

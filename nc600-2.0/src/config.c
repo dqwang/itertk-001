@@ -74,7 +74,7 @@ void config_makedefault ( CONFI_DATA *pConf )
     FOR ( i, MAX_COM_PORT )
     {
         pConf->con_com[i].id = i + 1;
-        pConf->con_com[i].bps = 115200;
+        pConf->con_com[i].bps = 9600;
         pConf->con_com[i].chk = 3;  //ÎÞÐ£Ñé
         pConf->con_com[i].sbit = 1;
         pConf->con_com[i].dbit = 8;
@@ -151,10 +151,33 @@ void config_makedefault ( CONFI_DATA *pConf )
 
    memset(pConf->con_sensor, 0, sizeof(pConf->con_sensor));
    pConf->con_sensor[SENSOR_TYPE_UART].type = SENSOR_TYPE_UART;
-   pConf->con_sensor[SENSOR_TYPE_IO_IN].type = SENSOR_TYPE_IO_IN;
-   pConf->con_sensor[SENSOR_TYPE_IO_OUT].type = SENSOR_TYPE_IO_OUT;
-   pConf->con_sensor[SENSOR_TYPE_SINGLE_BUS].type = SENSOR_TYPE_SINGLE_BUS;
+   pConf->con_sensor[SENSOR_TYPE_UART].num = MAX_COM_PORT;
+   pConf->con_sensor[SENSOR_TYPE_UART].seq_num[0]=0x01;
+   pConf->con_sensor[SENSOR_TYPE_UART].attr[0]=0x00;
+   pConf->con_sensor[SENSOR_TYPE_UART].seq_num[1]=0x02;
+   pConf->con_sensor[SENSOR_TYPE_UART].attr[1]=0x01;
    
+   
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].type = SENSOR_TYPE_IO_IN;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].num =0X03;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].seq_num[0]=0x01;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].attr[0]=0x00;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].seq_num[1]=0x02;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].attr[1]=0x00;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].seq_num[2]=0x03;
+   pConf->con_sensor[SENSOR_TYPE_IO_IN].attr[2]=0x00;
+   
+   pConf->con_sensor[SENSOR_TYPE_IO_OUT].type = SENSOR_TYPE_IO_OUT;
+   pConf->con_sensor[SENSOR_TYPE_IO_OUT].num = 2;
+   pConf->con_sensor[SENSOR_TYPE_IO_OUT].seq_num[0]=0x01;
+   pConf->con_sensor[SENSOR_TYPE_IO_OUT].attr[0]=0x00;
+    pConf->con_sensor[SENSOR_TYPE_IO_OUT].seq_num[1]=0x02;
+   pConf->con_sensor[SENSOR_TYPE_IO_OUT].attr[1]=0x00;
+   	
+   pConf->con_sensor[SENSOR_TYPE_SINGLE_BUS].type = SENSOR_TYPE_SINGLE_BUS;
+   pConf->con_sensor[SENSOR_TYPE_SINGLE_BUS].num =0x01;
+   pConf->con_sensor[SENSOR_TYPE_SINGLE_BUS].seq_num[0]=0x01;
+   pConf->con_sensor[SENSOR_TYPE_SINGLE_BUS].attr[0]=0x0;
    
 	config_save ( pConf );
 }

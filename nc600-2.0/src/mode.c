@@ -494,7 +494,7 @@ void pc_set_dev_info(char *recv_str)
 	CONFIG_SERVER con_server;
 	CONFIG_SYS con_sys;
 	int ret=-1;
-#if 0			
+#if 1			
 	if(p){
 		printf("%s\n",p);		
 		if (g_conf_info.con_net.dev_ip != sys_str2ip(p)){
@@ -521,7 +521,9 @@ void pc_set_dev_info(char *recv_str)
 
 	memcpy(&conf_net, &g_conf_info.con_net, sizeof(CONFIG_NET));
 	memcpy(&con_server, &g_conf_info.con_server, sizeof(CONFIG_SERVER));
-	memcpy(&con_sys, &g_conf_info.con_sys, sizeof(CONFIG_SERVER));
+	memcpy(&con_sys, &g_conf_info.con_sys, sizeof(CONFIG_SYS));
+
+	
 	
 	p = strtok(NULL, "|");
 	if(p){
@@ -577,7 +579,7 @@ void pc_set_dev_info(char *recv_str)
 		printf("%s\n", p);
 		strcpy(con_sys.host_sn, p);		
 	}
-
+	
 	/*mac here*/
 	{
 		unsigned char i=0;
@@ -598,11 +600,13 @@ void pc_set_dev_info(char *recv_str)
 	memcpy(&g_conf_info.con_server, &con_server, sizeof(CONFIG_SERVER));	
 	config_net_set(&g_conf_info.con_net);	
 	ret=dns_resolution(con_server.dns_str);
-
+	
 	memcpy(&g_conf_info.con_sys, &con_sys, sizeof(CONFIG_SYS));	
 	config_save(&g_conf_info);
 	/*update*/
 
+	
+	sleep(1);
 	
 	system("reboot");
 }

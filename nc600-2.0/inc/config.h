@@ -21,7 +21,7 @@
 #define SERVER_DNS "192.168.1.108"
 
 #define DEVICE_IP "192.168.1.166"
-#define HW_SN "DD-RTNS8S-XX****X"
+#define HW_SN "RTNS2D1I3S2K-XX****X"
 
 typedef struct tagCONFIG_SYS
 {

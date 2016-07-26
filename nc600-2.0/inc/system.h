@@ -5,7 +5,7 @@
 
 
 #define PRODUCT_NAME    "RTNS"
-#define PROGRAM_VERSION "v3.80"
+#define PROGRAM_VERSION "v4.00"
 #define HW_VERSION "v1.5"
 
 extern  void sys_version_show ( FILE * stream );
