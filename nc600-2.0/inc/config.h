@@ -10,13 +10,13 @@
 
 #define  CONFIG_FILE CONFIG_PATH""PRODUCT_NAME".cfg"
 
-#define MAX_COM_PORT    2
+#define MAX_COM_PORT    1
 #define MAX_SESSION     6
 #define MAX_USR_NUM     16
 
 #define SERVER_PORT	8888
 //#define SERVER_IP "192.168.1.100"
-#define SERVER_IP ""
+#define SERVER_IP "192.168.1.118"
 //#define SERVER_DNS "www.baidu.com"
 #define SERVER_DNS "192.168.1.108"
 
@@ -161,6 +161,9 @@ typedef struct tagCONFIG_DATA
 } CONFI_DATA;
 
 
+#define MAX_THREAD_ID 20
+
+
 extern  CONFI_DATA g_conf_info;
 void reconfig(CONFI_DATA *pConf);
 extern  void config_init ( void );
@@ -169,5 +172,8 @@ extern USR_INFO* get_usr_info(BYTE *name);
 extern int sys_usr_add(BYTE* name, BYTE* psw);
 extern int set_usr_name(BYTE *oname, BYTE *nname);
 extern int set_usr_psw(BYTE *name, BYTE *psw);
+
+extern void config_net_set(CONFIG_NET *pConf);
+extern void print_config(void);
 #endif
 

@@ -10,6 +10,8 @@ int gcomfd[MAX_COM_PORT] = {0};
 BYTE  rs_type = RS232;//default
 pthread_mutex_t rs485_mutex;		/*rs485°ëË«¹¤Ëø*/
 
+extern pthread_t thread_id[MAX_THREAD_ID];
+
 static void com_dev_open(void)
 {
     int i=0;
@@ -385,8 +387,10 @@ void com_init(void)
     {
         com_para_set(gcomfd[i], &con_com[i]);
     }	
-    FOR(i, MAX_COM_PORT)
+    FOR(i, MAX_COM_PORT){
         trd_create(&com_trd[i], (void*)&com_proc, &con_com[i]);
+		thread_id[4+i] = com_trd[i];
+	}
 }
 
 void com_set(CONFIG_COM *con_com)

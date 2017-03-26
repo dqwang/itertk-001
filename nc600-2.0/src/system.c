@@ -73,6 +73,18 @@ DWORD sys_str2ip ( char *str )
 }
 
 
+void sys_ip2str(DWORD ip, BYTE *str)
+{
+	BYTE i;
+	BYTE cIp[4];
+	DWORD iIp = ip;
+
+	for (i = 0; i < 4; i++)
+	{
+		cIp[i] = (BYTE)( (iIp>>(i*8)) & (0xff) );
+	}
+	sprintf((char*)str, "%d.%d.%d.%d", cIp[0], cIp[1], cIp[2], cIp[3]);
+}
 
 char* sys_ip2str_static ( DWORD ip )
 {

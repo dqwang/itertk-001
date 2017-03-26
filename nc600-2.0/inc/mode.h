@@ -56,4 +56,6 @@ extern void mode_init(void);
 
 
 extern void report_dev_info_init(void);/*UDP*/
+
+extern void restart_report_proc(void);
 #endif

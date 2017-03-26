@@ -7,9 +7,12 @@
 #include "log.h"
 #include "cmd_def.h"
 #include "system.h"
+#include "thread.h"
 
 CONFI_DATA g_conf_info;
 void get_mac_init(void);
+
+pthread_t thread_id[MAX_THREAD_ID] = {0};
 
 /*recovery configuration except SN and MAC*/
 void reconfig(CONFI_DATA *pConf)
@@ -199,6 +202,40 @@ void config_load ( CONFI_DATA *pConf )
 }
 
 
+//debug for bug03
+void print_config(void)
+{
+	CONFI_DATA c;
+	CONFI_DATA *p=&c;
+
+	char ip[16]={0};
+	char gw[16]={0};
+	char nm[16]={0};
+	char dns[16]={0};
+
+	u8 i=0;
+	memset(p,0x0, sizeof(CONFI_DATA));
+	config_load(p);
+
+	//please do not invoke the sys_ip2str_static twice in one syslog, the dev_ip will be covered by dev_gw
+
+	//sys_log (FUNC, LOG_WARN, "ip: %s, gateway: %s; mac: %02x:%02x:%02x:%02x:%02x:%02x", p_ip(p->con_net.dev_ip), p_ip(p->con_net.dev_gw), \
+		//p->con_net.dev_mac[0],p->con_net.dev_mac[1],p->con_net.dev_mac[2], p->con_net.dev_mac[3], p->con_net.dev_mac[4], p->con_net.dev_mac[5] );
+
+	sys_ip2str(p->con_net.dev_ip, ip);
+	sys_ip2str(p->con_net.dev_gw, gw);
+	sys_ip2str(p->con_net.dev_nm, nm);
+	sys_ip2str(p->con_net.dns[0], dns);
+
+	sys_log (FUNC, LOG_WARN, "ip: %s, gw: %s; nm:%s; dns:%s, mac: %02x:%02x:%02x:%02x:%02x:%02x", ip, gw, nm, dns, \
+		p->con_net.dev_mac[0],p->con_net.dev_mac[1],p->con_net.dev_mac[2], p->con_net.dev_mac[3], p->con_net.dev_mac[4], p->con_net.dev_mac[5] );
+
+
+	for (i=0; i<MAX_THREAD_ID; i++){
+		if (thread_id[i] != 0 )
+			sys_log (FUNC, LOG_WARN,"(%d)thread_id %d, zero is alive: %d",i, thread_id[i], pthread_kill(thread_id[i], 0));
+	}
+}
 void config_net_set(CONFIG_NET *pConf)
 {
 	char cmd[64] = "";

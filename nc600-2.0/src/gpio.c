@@ -13,7 +13,7 @@ u8 g_alarm_led_flag = ALARM_LED_FLAG_OFF;
 pthread_mutex_t gpio_mutex;
 u8 g_alarm_in[ALARM_MAX];
 
-
+extern pthread_t thread_id[MAX_THREAD_ID];
 
 
 #define GPIO_FLAG 1
@@ -346,9 +346,9 @@ void alarm_proc(void)
 {
 
 	u8 time[ALARM_MAX];
-	u8 alarm_init[ALARM_MAX];
-	u8 alarm_update[ALARM_MAX];
-	u8 i;
+	u8 alarm_init[ALARM_MAX] = {0};
+	u8 alarm_update[ALARM_MAX]={0};
+	u8 i=0;
 	u32 alarm_off_count[ALARM_MAX]={0};
 
 	memset(time, 0, sizeof(time));
@@ -377,11 +377,7 @@ void alarm_proc(void)
 		//get_alarm(alarm_init);
 		memcpy(alarm_init, alarm_update, sizeof(alarm_update));
 		usleep(ALARM_CYCLE*1000);
-		
-		
 	}
-	
-	
 }
 
 #else
@@ -478,16 +474,16 @@ int init_gpio(void)
 	set_gpio(OUTPUT_1, GD_OUT,GS_LOW);
 	set_gpio(OUTPUT_2, GD_OUT,GS_LOW);
 	set_gpio(OUTPUT_3, GD_OUT,GS_LOW);
-   set_gpio(OUTPUT_4, GD_OUT,GS_LOW);
+    set_gpio(OUTPUT_4, GD_OUT,GS_LOW);
 
-   set_gpio(TEMP_SENSOR_POWER, GD_OUT, GS_HIGH);
+    set_gpio(TEMP_SENSOR_POWER, GD_OUT, GS_HIGH);
 
 	trd_create(&gpio_trd, (void*)&alarm_proc, NULL);
- 	trd_create(&gpio_trd, (void*)&system_run_proc, NULL);
+	thread_id[0] = gpio_trd;
+	trd_create(&gpio_trd, (void*)&system_run_proc, NULL);
+	thread_id[1] = gpio_trd;
 	trd_create(&gpio_trd, (void*)&cfg_key_proc, NULL);
-
-
-	
+	thread_id[2] = gpio_trd;
 	
 	return 0;
 }

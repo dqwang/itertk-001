@@ -473,7 +473,7 @@ int sys_gpio_set(NET_CONN_INFO *conn_info, ITSIP *p_net_head)
 	set_gpio(OUTPUT_1, GD_OUT,g_conf_info.con_gpio.output[0]);
 	set_gpio(OUTPUT_2, GD_OUT,g_conf_info.con_gpio.output[1]);
 	set_gpio(OUTPUT_3, GD_OUT,g_conf_info.con_gpio.output[2]);
-   set_gpio(OUTPUT_4, GD_OUT,g_conf_info.con_gpio.output[3]);
+    set_gpio(OUTPUT_4, GD_OUT,g_conf_info.con_gpio.output[3]);
 	
 	
     	config_save(&g_conf_info);

@@ -26,6 +26,9 @@
 
 MODECONFIG mode[MAX_COM_PORT][MAX_SESSION];
 
+extern pthread_t thread_id[MAX_THREAD_ID];
+int flag_restart_report_proc = 0;
+
 //////////////////////////////////////////////////////////////////////////
 ///
 ///     建立客户端连接
@@ -413,6 +416,7 @@ void mode_init(void)
             mode[i][j].id = i;
             mode[i][j].session = &g_conf_info.con_mode[i].session[j];
             trd_create(&mode_trd, (void*)&mode_proc, &mode[i][j]);
+			thread_id[5+MAX_COM_PORT+i+j] = mode_trd;
         }
     }
 }
@@ -643,6 +647,8 @@ void pc_get_dev_info(char *info)
 	
 }	
 
+
+
 void report_proc(void)
 {
 	char recmsg[BUFLEN + 1];
@@ -695,7 +701,11 @@ void report_proc(void)
 
 	memset(&servaddr, 0, socklen);
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(atoi(GROUP_PORT));	
+	servaddr.sin_port = htons(atoi(GROUP_PORT));
+
+	int tmp = 1;
+	setsockopt(g_report_sfd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(int));
+
 	if (bind(g_report_sfd, (struct sockaddr *) &servaddr,sizeof(struct sockaddr_in)) == -1) {
 		sys_log(FUNC, LOG_ERR,"bind"); 
 		return ;
@@ -725,6 +735,12 @@ void report_proc(void)
 				if (sendto(g_report_sfd, sendmsg, strlen(sendmsg), 0,	(struct sockaddr *) &peeraddr,sizeof(struct sockaddr_in)) <=0) {
 					//sys_log(FUNC, LOG_ERR,"can't sendto %s", sendmsg); 
 					perror("sendto");
+
+					close(g_report_sfd);
+					flag_restart_report_proc = 1;
+					pthread_exit("exit report_proc thread");
+
+					// do not write any code here. not reachable
 				}else{
 					sys_log(FUNC, LOG_DBG,"send ack packet %s", sendmsg); 
 				}				
@@ -744,6 +760,17 @@ void report_dev_info_init(void)
 {
 	TRD_t report_trd;
 	trd_create(&report_trd, (void*)&report_proc, NULL);
+	thread_id[4+MAX_COM_PORT] = report_trd;
+}
+
+
+void restart_report_proc(void)
+{
+	if (flag_restart_report_proc == 1){
+		flag_restart_report_proc == 0;
+		report_dev_info_init();
+		sys_log(FUNC, LOG_DBG, "restart_report_proc , thread id: %d", thread_id[4+MAX_COM_PORT]);
+	}
 }
 
 	

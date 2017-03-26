@@ -20,6 +20,7 @@ CONFIG_COM get_com_attr_max[MAX_COM_PORT];
 CONFIG_COM set_com_attr;
 CONFIG_COM set_com_attr_max[MAX_COM_PORT];
 
+extern pthread_t thread_id[MAX_THREAD_ID];
 
 
 extern u8 g_alarm_in[ALARM_MAX];
@@ -33,8 +34,13 @@ int g_sockfd_client = -1;
 int g_reconnect_flag = RECONNECT_OFF;
 int g_sockfd_client_status = SOCKFD_CLIENT_NULL;
 
-char buf[1024*1024*2];
+char recv_buf[1024*1024*2];
 u8 buf_send[1024];
+
+
+#define COUNTER_RECONNECT_MAX 10
+int g_flag_client_connect_server_successfully = 0;
+int g_flag_client_reconnect_cnt = 0;
 
 void printf_hex(char *buf, int n);
 
@@ -793,7 +799,7 @@ int  uart_send_data(u8 *_buf)
 	return ret;
 }
 
-int make_ack_uart_send_data(u8* _buf)
+int make_ack_uart_send_data(u8* _buf, u8* recv_p)
 {
 	u16 cnt=0;
 	
@@ -804,7 +810,7 @@ int make_ack_uart_send_data(u8* _buf)
 		_buf[5]=0;
 		_buf[6]=0;
 	}else{
-		cnt=uart_send_data(buf);
+		cnt=uart_send_data(recv_p);
 		_buf[5]=cnt/0x100;
 		_buf[6]=cnt%0x100;
 	}	
@@ -865,8 +871,7 @@ int check_for_query_uart_recv_data(u8* _buf, u8 _num)
 	
 	if(check_protocol_head(_buf,(u8)PROTOCOL_QUERY_UART_RECV_DATA))
 		return ERROR_HEAD_OR_DEVICE_ID;
-	
-	
+
 	if(check_for_crc(_buf,_num))
 		return ERROR_CRC_CHECK;
 
@@ -879,7 +884,7 @@ int make_ack_query_uart_recv_data(u8* _buf)
 	DWORD id=0;
 	make_ack_head( _buf, PROTOCOL_ACK_QUERY_UART_RECV_DATA);
 
-	id=buf[4]-1;
+	id=recv_buf[4]-1;//maybe panic if many packets...2017-03-14
 	
 	_buf[4]=id+1;
 
@@ -1024,8 +1029,7 @@ int check_for_get_io_status(u8* _buf, u8 _num)
 	
 	if(check_protocol_head(_buf,(u8)PROTOCOL_GET_IO_STATUS))
 		return ERROR_HEAD_OR_DEVICE_ID;
-	
-	sys_log(FUNC, LOG_DBG, "%d\n", buf[4]);
+
 	if(check_for_crc(_buf,_num))
 		return ERROR_CRC_CHECK;
 
@@ -1523,10 +1527,14 @@ int client_connect_server(void)
 		return FAILURE;
 	}
 	/*dns*/	
+
+	#if 0/*2016-08-02 debug*/
 	ret=dns_resolution(g_conf_info.con_server.dns_str);
 	if (DNS_FAILED == ret){
 		return FAILURE;
 	}
+	#endif
+
 	memset(&alarm_server , 0, sizeof(struct sockaddr_in ));	
 	alarm_server.sin_family = AF_INET;
 	alarm_server.sin_addr.s_addr = g_conf_info.con_server.server_ip;
@@ -1534,8 +1542,8 @@ int client_connect_server(void)
 
 	in_ip.s_addr = g_conf_info.con_server.server_ip;
 
-	sys_log(FUNC, LOG_WARN, "alarm server:ip %s: port %d, fd=%d, ret=%d", inet_ntoa(in_ip) , \
-		g_conf_info.con_server.server_port, g_sockfd_client, ret);
+	sys_log(FUNC, LOG_WARN, "alarm server:ip %s: port %d, fd=%d", inet_ntoa(in_ip) , \
+		g_conf_info.con_server.server_port, g_sockfd_client);
 	/*connect poll*/
 	old_fl=fcntl(g_sockfd_client, F_GETFL, 0);
 	if (fcntl(g_sockfd_client, F_SETFL, old_fl |O_NONBLOCK ) < 0) {
@@ -1569,6 +1577,10 @@ int client_connect_server(void)
 
 	sys_log(FUNC, LOG_MSG, "Connect Alarm Server Successfully");
 	fcntl(g_sockfd_client, F_SETFL, old_fl);
+
+	g_flag_client_connect_server_successfully = 1;
+	g_flag_client_reconnect_cnt = 0;
+
 	return SUCCESS;
 err:
 	g_reconnect_flag = RECONNECT_ON;
@@ -1583,10 +1595,40 @@ err:
 }
 
 
+
+void bug03_workaroud_restart_eth0(void)
+{
+	char cmd[64] = "";
+
+	sys_log(FUNC, LOG_WARN, "down/up eth0 for bug03");
+
+	sprintf(cmd, "ifconfig eth0 down");
+	system(cmd);
+
+	sprintf(cmd, "ifconfig eth0 up");
+	system(cmd);
+
+	config_net_set(&g_conf_info.con_net);
+}
+
+void bug03_workaroud_restart_system(void)
+{
+	char cmd[64] = "";
+
+	sys_log(FUNC, LOG_WARN, "connect to server failed more than 10 times, system reboot now!");
+
+	sprintf(cmd, "reboot");
+	system(cmd);
+}
+
+
 /*
 case 1: server configuration(ip , port) updated
 case 2: server offline(No heartbeat)
 */
+
+extern int flag_restart_report_proc;
+
 int client_reconnect(void)
 {
 	static int counter =0;
@@ -1604,13 +1646,52 @@ int client_reconnect(void)
 			
 		}
 		sys_log(FUNC, LOG_WARN, "Reconnect duration %dS:  counter: %d",CLIENT_RECONNECT_DURATION, ++counter);
-		sleep(CLIENT_RECONNECT_DURATION);
-			
-	}	
 
+		print_config();
+
+		g_flag_client_reconnect_cnt++;
+
+		if (g_flag_client_connect_server_successfully == 1 && g_flag_client_reconnect_cnt >= COUNTER_RECONNECT_MAX){
+			g_flag_client_reconnect_cnt = 0;
+			
+			bug03_workaroud_restart_system();
+		}
+		//bug03_workaroud_restart_eth0();
+
+		//restart_report_proc();
+		sleep(CLIENT_RECONNECT_DURATION);
+	}
 	return SUCCESS;
 }
 
+
+int decode_protocol(u8 *recv_buf, int recv_size, u8 *out_suffix)
+{
+	int ret_protocol_num = 0;
+	int i=0;
+	u8 * protocol_start = out_suffix;
+
+	if (recv_buf == NULL || protocol_start == NULL){
+		ret_protocol_num = 0;
+		return ret_protocol_num;
+	}
+
+	for (i=0; i<recv_size; i++){
+		if((recv_buf[i] == PROTOCOL_HEAD_1) && (recv_buf[i+1] == PROTOCOL_HEAD_2)){
+			ret_protocol_num++;
+			*protocol_start++ = i;
+		}
+	}
+
+	//for (i=0; i<ret_protocol_num; i++){
+		//sys_log(FUNC, LOG_ERR, "ret_protocol_num is %d, protocol_start is %d", ret_protocol_num, recv_buf[*protocol_start+2]);
+		//protocol_start++;
+	//}
+
+	return ret_protocol_num;
+}
+
+#define MAX_RECV_PROTOCOL_NUM 10
 
 void client_process(void)
 {
@@ -1619,11 +1700,19 @@ void client_process(void)
 	int num_read_from_socket;
 	int num_to_send;	
 	int res = -1;
+	u8 out_suffix[MAX_RECV_PROTOCOL_NUM]={0};
+	u8 *protocol_start = NULL;
+	int decode_procotol_num = 0;
+	int i = 0;
+
 	struct timeval tv;
 
 	sys_log(FUNC, LOG_MSG, "start");
 	while (1)
 	{			
+
+		print_config();
+
 		heartbeat_timeout ++;
 		sys_log(FUNC, LOG_DBG, "heartbeat_timeout = %d heartbeat_s=%d",heartbeat_timeout, heartbeat_s);
 		if (heartbeat_timeout > heartbeat_s){
@@ -1652,7 +1741,7 @@ void client_process(void)
 			continue;
 		}else if (res > 0){
 			if (FD_ISSET(g_sockfd_client, &readfds))
-				num_read_from_socket = read(g_sockfd_client, buf, 100);
+				num_read_from_socket = read(g_sockfd_client, recv_buf, 100);
 		}else{
 			continue;
 		}
@@ -1661,19 +1750,26 @@ void client_process(void)
 			continue;
 		}
 		sys_log(FUNC, LOG_WARN, "recv %d bytes!\n",num_read_from_socket);
-		printf_hex(buf,num_read_from_socket);		
+		printf_hex(recv_buf,num_read_from_socket);
 
-		if (check_head(buf) == -1 ){
+		if (check_head(recv_buf) == -1 ){
 			continue;
 		}		
 
 		g_sockfd_client_status = SOCKFD_CLIENT_OK;
-		
-		switch (buf[2]){
+
+		//fix bug02 2017-03-09
+		decode_procotol_num = decode_protocol(recv_buf,num_read_from_socket, out_suffix);
+		protocol_start = out_suffix;
+
+		for (i = 0; i < decode_procotol_num; i++){
+			sys_log(FUNC, LOG_WARN, "decode_procotol_num is %d, protocol_start suffix is %d", decode_procotol_num, *protocol_start);
+
+			switch ( recv_buf[*protocol_start + 2]){
 			case PROTOCOL_GET_DEVICE_ATTR:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_DEVICE_ATTR");
 				
-				if(!check_for_get_device_attr(buf,num_read_from_socket))
+				if(!check_for_get_device_attr(recv_buf+*protocol_start,num_read_from_socket))
 				{
 					num_to_send = make_ack_get_device_attr(buf_send);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1685,12 +1781,12 @@ void client_process(void)
 				break;
 			case PROTOCOL_SET_DEVICE_ATTR:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_DEVICE_ATTR");
-				if(!check_for_set_device_attr(buf,num_read_from_socket))
+				if(!check_for_set_device_attr(recv_buf+*protocol_start,num_read_from_socket))
 				{
 					/*todo set device attr
 						传感器有好几类，此处只处理报警传感器
 					*/
-					set_alarmin_device_attr(buf);
+					set_alarmin_device_attr(recv_buf+*protocol_start);
 				
 					num_to_send = make_ack_set_device_attr(buf_send);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1702,7 +1798,7 @@ void client_process(void)
 				break;
 			case PROTOCOL_GET_ALARM_STATUS:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_ALARM_STATUS");
-				if(!check_for_get_alarm_status(buf,num_read_from_socket))
+				if(!check_for_get_alarm_status(recv_buf+*protocol_start,num_read_from_socket))
 				{					
 					/*alarmin*/
 					
@@ -1721,7 +1817,7 @@ void client_process(void)
 				break;
 			case PROTOCOL_SET_TIME:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_TIME");				
-				if(!check_for_set_time(buf,num_read_from_socket))
+				if(!check_for_set_time(recv_buf+*protocol_start,num_read_from_socket))
 				{
 					/* TODO */
 					/*set time*/
@@ -1736,7 +1832,7 @@ void client_process(void)
 				break;
 			case PROTOCOL_SET_HEARTBEAT:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_HEARTBEAT");
-				if(!check_for_set_heartbeat(buf,num_read_from_socket))
+				if(!check_for_set_heartbeat(recv_buf+*protocol_start,num_read_from_socket))
 				{
 					num_to_send = make_ack_set_heartbeat(buf_send,heartbeat_s);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1745,13 +1841,13 @@ void client_process(void)
 					sys_log(FUNC, LOG_DBG, "send %d bytes", num_to_send);
 					printf_hex(buf_send, num_to_send);
 
-					set_heartbeat(HEARTBEAT_ONLINE, buf[4]);	
+					set_heartbeat(HEARTBEAT_ONLINE, recv_buf[*protocol_start+4]);
 					led_ctrl(LED_D3_ALARM_SERVER_STATUS, LED_ON);
 				}
 				break;
 			case PROTOCOL_GET_UART_QTY:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_UART_QTY");
-				if(!check_for_get_uart_qty(buf,num_read_from_socket))
+				if(!check_for_get_uart_qty(recv_buf+*protocol_start,num_read_from_socket))
 				{					
 					num_to_send = make_ack_get_uart_qty(buf_send);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1764,8 +1860,8 @@ void client_process(void)
 				break;
 			case PROTOCOL_GET_UART_ATTR:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_UART_ATTR");
-				if (!check_for_get_uart_attr(buf, num_read_from_socket)){
-					num_to_send = make_ack_get_uart_attr(buf_send, buf);
+				if (!check_for_get_uart_attr(recv_buf+*protocol_start, num_read_from_socket)){
+					num_to_send = make_ack_get_uart_attr(buf_send, recv_buf+*protocol_start);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
 					if(ret != num_to_send) 
 						printf("write socket error!\n");
@@ -1776,8 +1872,8 @@ void client_process(void)
 				break;
 			case PROTOCOL_SET_UART_ATTR:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_UART_ATTR");
-				if (!check_for_set_uart_attr(buf, num_read_from_socket)){
-					num_to_send=make_ack_set_uart_attr(buf_send,buf);
+				if (!check_for_set_uart_attr(recv_buf+*protocol_start, num_read_from_socket)){
+					num_to_send=make_ack_set_uart_attr(buf_send,recv_buf+*protocol_start);
 					ret = write(g_sockfd_client, buf_send, num_to_send);
 					if(ret != num_to_send) 
 						printf("write socket error!\n");
@@ -1787,7 +1883,7 @@ void client_process(void)
 				break;
 			case PROTOCOL_QUERY_UART_SENDBUF:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_QUERY_UART_SENDBUF");
-				if (!check_for_query_uart_sendbuf(buf, num_read_from_socket)){
+				if (!check_for_query_uart_sendbuf(recv_buf+*protocol_start, num_read_from_socket)){
 					num_to_send = make_ack_query_uart_sendbuf(buf_send);
 
 					/*TODO :buf*/
@@ -1802,8 +1898,8 @@ void client_process(void)
 
 			case PROTOCOL_UART_SEND_DATA:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_UART_SEND_DATA");
-				if (!check_for_uart_send_data(buf, num_read_from_socket)){
-					num_to_send = make_ack_uart_send_data(buf_send);
+				if (!check_for_uart_send_data(recv_buf+*protocol_start, num_read_from_socket)){
+					num_to_send = make_ack_uart_send_data(buf_send, recv_buf+*protocol_start);
 
 					/*TODO*/
 
@@ -1816,7 +1912,7 @@ void client_process(void)
 			break;
 			case PROTOCOL_SET_UART_RECV_ATTR:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_UART_RECV_ATTR");
-				if (!check_for_set_uart_recv_attr(buf, num_read_from_socket)){
+				if (!check_for_set_uart_recv_attr(recv_buf+*protocol_start, num_read_from_socket)){
 					
 					/*TODO*/
 
@@ -1826,7 +1922,7 @@ void client_process(void)
 
 			case PROTOCOL_QUERY_UART_RECV_DATA:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_QUERY_UART_RECV_DATA");
-				if (!check_for_query_uart_recv_data(buf, num_read_from_socket)){
+				if (!check_for_query_uart_recv_data(recv_buf+*protocol_start, num_read_from_socket)){
 					num_to_send = make_ack_query_uart_recv_data(buf_send);
 
 					/*TODO*/
@@ -1841,7 +1937,7 @@ void client_process(void)
 
 			case PROTOCOL_GET_IO_NUM:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_IO_NUM");
-				if (!check_for_get_io_num(buf, num_read_from_socket)){
+				if (!check_for_get_io_num(recv_buf+*protocol_start, num_read_from_socket)){
 					num_to_send = make_ack_get_io_num(buf_send);
 
 					/*TODO*/
@@ -1856,19 +1952,19 @@ void client_process(void)
 
 			case PROTOCOL_SET_IO:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_IO");
-				if (!check_for_set_io(buf, num_read_from_socket)){
+				if (!check_for_set_io(recv_buf+*protocol_start, num_read_from_socket)){
 					
 					/*TODO*/
 
-					set_io_out(buf);					
+					set_io_out(recv_buf+*protocol_start);
 				}
 			break;
 
 			case PROTOCOL_GET_IO_STATUS:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_IO_STATUS");
-				if (!check_for_get_io_status(buf, num_read_from_socket)){
+				if (!check_for_get_io_status(recv_buf+*protocol_start, num_read_from_socket)){
 								
-					num_to_send = make_ack_get_io_status(buf_send, buf);
+					num_to_send = make_ack_get_io_status(buf_send, recv_buf+*protocol_start);
 
 
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1881,7 +1977,7 @@ void client_process(void)
 
 			case PROTOCOL_GET_TEMP_NUM:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_TEMP_NUM");
-				if (!check_for_get_temp_num(buf, num_read_from_socket)){
+				if (!check_for_get_temp_num(recv_buf+*protocol_start, num_read_from_socket)){
 								
 					num_to_send = make_ack_get_temp_num(buf_send);
 
@@ -1897,13 +1993,13 @@ void client_process(void)
 			case PROTOCOL_SET_TEMP:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_SET_TEMP");
 
-				set_temp(buf);
+				set_temp(recv_buf+*protocol_start);
 			
 			break;
 
 			case PROTOCOL_GET_TEMP_STATUS:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_TEMP_STATUS");
-				if (!check_for_get_temp_status(buf, num_read_from_socket)){
+				if (!check_for_get_temp_status(recv_buf+*protocol_start, num_read_from_socket)){
 								
 					num_to_send = make_ack_get_temp_status(buf_send);
 
@@ -1919,7 +2015,7 @@ void client_process(void)
 #if 0
 			case PROTOCOL_GET_SENSOR_TYPE:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_SENSOR_TYPE");
-				if (!check_for_get_sensor_type(buf, num_read_from_socket)){
+				if (!check_for_get_sensor_type(recv_buf+*protocol_start, num_read_from_socket)){
 					num_to_send = make_ack_get_sensor_type(buf_send);
 
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1933,7 +2029,7 @@ void client_process(void)
 
 			case PROTOCOL_GET_SENSOR_DATA:
 				sys_log(FUNC, LOG_DBG, "PROTOCOL_GET_SENSOR_DATA");
-				if (!check_for_get_sensor_data(buf, num_read_from_socket)){
+				if (!check_for_get_sensor_data(recv_buf+*protocol_start, num_read_from_socket)){
 					num_to_send = make_ack_get_sensor_data(buf_send);
 
 					ret = write(g_sockfd_client, buf_send, num_to_send);
@@ -1949,7 +2045,9 @@ void client_process(void)
 				sys_log(FUNC, LOG_ERR, "wrong cmd from server ");
 				break;				
 		}
-		
+
+		protocol_start++;//next protocol
+		}
 	}	
 }
 	
@@ -1958,6 +2056,7 @@ void client_thread(void)
 	TRD_t client_trd;
 	
 	trd_create(&client_trd, (void*)&client_process, NULL);
+	thread_id[3] = client_trd;
 }
 
 
